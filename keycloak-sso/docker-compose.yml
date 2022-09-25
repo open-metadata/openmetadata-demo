@@ -152,6 +152,7 @@ services:
       - "localhost:172.16.240.10"
       - "localhost:172.16.240.11"
       - "localhost:172.16.240.13"
+      - "host.docker.internal:host-gateway"
     volumes:
       - ingestion-volume-dag-airflow:/airflow/dag_generated_configs
       - ingestion-volume-dags:/ingestion/examples/airflow/dags
