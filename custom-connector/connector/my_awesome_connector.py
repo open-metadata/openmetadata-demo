@@ -18,6 +18,15 @@ from metadata.ingestion.api.source import Source, SourceStatus
 from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
     OpenMetadataConnection,
 )
+from metadata.generated.schema.api.data.createDatabase import CreateDatabaseRequest
+from metadata.generated.schema.entity.services.databaseService import (
+    DatabaseService,
+)
+from metadata.generated.schema.metadataIngestion.workflow import (
+    Source as WorkflowSource,
+)
+from metadata.generated.schema.type.entityReference import EntityReference
+from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.utils.logger import ingestion_logger
 
 logger = ingestion_logger()
@@ -40,22 +49,44 @@ class MyAwesomeConnector(Source):
     Custom connector to ingest Database metadata
     """
 
-    def __init__(self, metadata_config: OpenMetadataConnection):
+    def __init__(self, config: WorkflowSource, metadata_config: OpenMetadataConnection):
+        self.config = config
         self.metadata_config = metadata_config
+
+        self.metadata = OpenMetadata(self.metadata_config)
         self.status = MyAwesomeConnectorStatus()
 
     @classmethod
     def create(
-            cls, _: dict, metadata_config: OpenMetadataConnection
+            cls, config_dict: dict, metadata_config: OpenMetadataConnection
     ) -> "MyAwesomeConnector":
-
-        return cls(metadata_config)
+        config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
+        return cls(config, metadata_config)
 
     def prepare(self):
         pass
 
+    def yield_create_request_database_service(self, config: WorkflowSource):
+        yield self.metadata.get_create_service_from_source(
+            entity=DatabaseService, config=config
+        )
+
     def next_record(self) -> Iterable[Entity]:
-        pass
+
+        yield from self.yield_create_request_database_service(self.config)
+
+        service_entity: DatabaseService = self.metadata.get_by_name(
+            entity=DatabaseService, fqn=self.config.serviceName
+        )
+        service_id = service_entity.id
+
+        yield CreateDatabaseRequest(
+            name="awesome-database",
+            service=EntityReference(
+                id=service_id,
+                type="databaseService",
+            ),
+        )
 
     def get_status(self) -> SourceStatus:
         return self.status

@@ -1,9 +1,7 @@
 import os
 from typing import Dict, Set
 
-from setuptools import find_namespace_packages, setup
-
-build_options = {"includes": ["_cffi_backend"]}
+from setuptools import find_namespace_packages, setup, find_packages
 
 base_requirements = {
     "openmetadata-ingestion==0.12.2"
@@ -18,6 +16,6 @@ setup(
     description="Ingestion Framework for OpenMetadata",
     long_description_content_type="text/markdown",
     python_requires=">=3.7",
-    options={"build_exe": build_options},
     install_requires=list(base_requirements),
+    packages=find_packages(include=['connector', 'connector.*']),
 )

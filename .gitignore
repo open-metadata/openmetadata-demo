@@ -1,6 +1,9 @@
 .idea/
 *.iml
 *.ipr
+build/
+*.egg-info/
+venv/
 
 # CMake
 cmake-build-*/
