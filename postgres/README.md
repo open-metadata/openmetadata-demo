@@ -10,6 +10,9 @@ The goal of the demo is to extract different metadata from a Postgres database:
 - Lineage from queries
 - Profiling & Tests
 
+**OBS**: Note that this demo is based on OpenMetadata version 0.12.1. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion==0.12.1`
+
 ## Requirements
 
 Docker compose v2 installed on your laptop.
