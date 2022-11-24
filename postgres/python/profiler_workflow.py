@@ -20,6 +20,13 @@ config = """
 source:
   type: postgres
   serviceName: demo_pg
+  serviceConnection:
+    config:
+      type: Postgres
+      username: openmetadata_user
+      password: password
+      hostPort: postgres:5432
+      database: postgres
   sourceConfig:
     config:
       type: Profiler
@@ -34,6 +41,7 @@ sink:
   type: metadata-rest
   config: {}
 workflowConfig:
+  loggerLevel: DEBUG
   openMetadataServerConfig:
     hostPort: http://openmetadata-server:8585/api
     authProvider: openmetadata

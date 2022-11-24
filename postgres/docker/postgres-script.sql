@@ -22,6 +22,13 @@ CREATE TABLE public.actor (
 
 ALTER TABLE public.actor OWNER TO openmetadata_user;
 
+CREATE TABLE public.bad_actor (
+  actor_id integer NOT NULL,
+  last_update timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.bad_actor OWNER TO openmetadata_user;
+
 CREATE TABLE public.film_actor (
    actor_id integer NOT NULL,
    film_id integer NOT NULL,
