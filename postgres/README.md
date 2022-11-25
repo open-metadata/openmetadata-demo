@@ -10,24 +10,65 @@ The goal of the demo is to extract different metadata from a Postgres database:
 - Lineage from queries
 - Profiling & Tests
 
-**OBS**: Note that this demo is based on OpenMetadata version 0.12.1. If playing locally with the `openmetadata-ingestion`
-package, make sure to install `openmetadata-ingestion==0.12.1`
+**OBS**: Note that this demo is based on OpenMetadata version 0.13.0. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion==0.13.0`
 
 ## Requirements
 
-Docker compose v2 installed on your laptop.
+### Docker Compose
 
-## How to run?
+Docker compose v2 installed on your laptop. You can install it following the official [docs](https://docs.docker.com/compose/install/).
 
-`make run` has you covered.
+```bash
+❯ docker compose version
+Docker Compose version v2.2.3
+```
+
+### Python 3
+
+OpenMetadata supports Python 3.7+. This demo has been built and tested using Python 3.9:
+
+```bash
+❯ python -V
+Python 3.9.13
+```
+
+It is recommended to use python within a virtual environment for isolation:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+You can now validate that you are using the right python executable with:
+
+```bash
+❯ which python
+~/openmetadata-demo/postgres/venv/bin/python
+```
 
 ## What you'll find here
 
-- `docker/docker-compose.yml`: This is the default `docker-compose.yml` file from the 0.12.1 release of OpenMetadata. We added
+- `docker/docker-compose.yml`: This is the default `docker-compose.yml` file from the 0.13.0 release of OpenMetadata. We added
   a sample Postgres db in there as well to ingest some sample data.
 - `python/profiler_workflow.py`: A sample Python script to run the profiler ingestion.
 - `python/lineage.ipynb`: With a step-by-step showcase of lineage APIs.
 
+## How to run?
+
+`make run` has you covered. It will spin up the following services:
+
+1. OpenMetadata Server
+2. OpenMetadata Ingestion
+3. MySQL
+4. Elasticsearch
+5. Our custom Postgres
+
+OBS: Note that this demo does not have any volumes mounted. You can restart the docker to start with a clean
+OpenMetadata deployment, but you should only use this as a playground. You can find more information on
+how to deploy OpenMetadata [here](https://docs.open-metadata.org/deployment).
+
+**Question**: What is the OpenMetadata architecture? How do the different components interact?
 
 ## Metadata Ingestion
 
@@ -41,12 +82,41 @@ For the rest of the demo to work without any changes, let's name our service `de
 
 **Question**: What happens when we deploy an Ingestion from the UI?
 
-What are we expecting to find after running the metadata ingestion?
+After running the metadata ingestion, we expect that:
+
 1. Databases & Schemas are ingested
 2. Tables show their schema and constraints
 3. Lineage between `actor` and `actor_view`
 4. How can we add ownership?
 5. How can we request a better description?
+
+## Updating metadata
+
+Connect to the db via `psql -d postgres -U openmetadata_user -W` inside the `sample_postgres` container. Listing
+the tables, we should see:
+
+```
+postgres=> \dt
+                List of relations
+ Schema |    Name    | Type  |       Owner
+--------+------------+-------+-------------------
+ public | actor      | table | openmetadata_user
+ public | bad_actor  | table | openmetadata_user
+ public | film_actor | table | openmetadata_user
+(3 rows)
+```
+
+What we'll do:
+
+1. `DROP TABLE public.bad_actor;`
+2. `ALTER TABLE public.actor DROP COLUMN last_update;`
+3. `ALTER TABLE public.film_actor ADD money BIGINT DEFAULT 9999999;`
+
+**Question**: What has happened in the assets version?
+
+## Collaboration
+
+**Collaboration**: What's the best place to ask for a table description?
 
 ## Lineage Ingestion
 
@@ -56,8 +126,10 @@ Let's create a new table in the database:
 create table actor_catalog as select first_name as name, last_name as surname from actor;
 ```
 
-Then, run the Metadata Ingestion workflow + the Lineage Workflow. What will we see when checking the lineage tab
-from `actor_catalog`?
+Then, run the Metadata Ingestion workflow + the Lineage Workflow. 
+
+**Question**: What will we see when checking the lineage tab from `actor_catalog`? Can we check which SQL query 
+powered this transformation?
 
 ## Usage Ingestion
 
@@ -130,5 +202,5 @@ with (requires Python >= 3.7):
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install openmetadata-ingestion jupyter
+pip install jupyter notebook openmetadata-ingestion==0.13.0.1
 ```
