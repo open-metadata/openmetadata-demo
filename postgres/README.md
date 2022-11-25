@@ -86,9 +86,7 @@ After running the metadata ingestion, we expect that:
 
 1. Databases & Schemas are ingested
 2. Tables show their schema and constraints
-3. Lineage between `actor` and `actor_view`
-4. How can we add ownership?
-5. How can we request a better description?
+3. How can we add ownership?
 
 ## Updating metadata
 

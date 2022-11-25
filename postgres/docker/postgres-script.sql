@@ -44,10 +44,6 @@ ALTER TABLE ONLY public.actor
 ALTER TABLE ONLY public.film_actor
     ADD CONSTRAINT film_actor_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.actor(actor_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
-CREATE OR REPLACE VIEW public.actor_view AS
-SELECT first_name, last_name
-FROM public.actor;
-
 INSERT INTO public.actor VALUES (1, 'PENELOPE', 'GUINESS', '2022-02-15 09:34:33+00');
 INSERT INTO public.actor VALUES (2, 'NICK', 'WAHLBERG', '2022-02-15 09:34:33+00');
 INSERT INTO public.actor VALUES (3, 'ED', 'CHASE', '2022-02-15 09:34:33+00');

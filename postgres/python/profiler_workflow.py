@@ -41,7 +41,7 @@ sink:
   type: metadata-rest
   config: {}
 workflowConfig:
-  loggerLevel: DEBUG
+  # loggerLevel: DEBUG
   openMetadataServerConfig:
     hostPort: http://openmetadata-server:8585/api
     authProvider: openmetadata
