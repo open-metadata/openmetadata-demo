@@ -1,0 +1,43 @@
+serviceName: CustomMLService
+
+name: Revenue Predictions
+description: |
+  This model computes how long it will take for an order to be picked up and delivered
+  when a user has completed the payment and is updated until the order reaches it destination.
+
+algorithm: XGBoost
+target: expected_time
+
+mlFeatures:
+  - name: last_update_bucket
+    dataType: categorical
+    featureAlgorithm: Bucketing
+    featureSources:
+      - name: orders
+        dataType: timestamp
+        dataSourceFqn: demo_pg.postgres.public.orders
+  - name: restaurant_dimension
+    dataType: numerical
+    featureAlgorithm: PCA
+    featureSources:
+      - name: rating
+        dataType: integer
+        dataSourceFqn: demo_pg.postgres.public.restaurants
+      - name: average_price
+        dataType: integer
+        dataSourceFqn: demo_pg.postgres.public.restaurants
+  - name: is_premium
+    dataType: categorical
+    featureSources:
+      - name: premium
+        dataType: boolean
+        dataSourceFqn: demo_pg.postgres.public.users
+
+mlHyperParameters:
+  - name: regularisation
+    value: 0.5
+    description: Adding some room for error
+
+mlStore:
+  storage: s3://path-to-pickle
+  imageRepository: https://docker.hub.com/image
