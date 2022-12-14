@@ -125,6 +125,16 @@ For the rest of the demo to work without any changes, let's name our service `de
 Our YAML file will follow the structure of the [ML Model](https://docs.open-metadata.org/main-concepts/metadata-standard/schemas/entity/data/mlmodel) definition
 in the OpenMetadata standard. We will then use the Python SDK to send the information to OpenMetadata via API calls.
 
-You can find a similar example in the [docs](https://docs.open-metadata.org/sdk/python/entities/ml-model).
+**OBS**: Note that we have a slight difference. The Data Source fields in the ML Model definition are Entity References,
+they require an ID to match an existing Entity in OpenMetadata. For simplicity, we don't want to search for IDs when
+building the YAML files, so we are instead using the FQN (Fully Qualified Name) of the Tables and the Python
+script will automatically transform that into a proper Entity Reference.
 
+You can find more information in the [docs](https://docs.open-metadata.org/sdk/python/entities/ml-model).
 
+## Ingest ML metadata
+
+After ingesting the Postgres metadata, we can execute `python mlmodel_cicd.py` to mimic our CICD process.
+
+Caveat: Running this in 0.13.0 has a known issue on the order of the lineage nodes for ML Models. We'll update
+this demo to have it working with the fixed logic in 0.13.1
