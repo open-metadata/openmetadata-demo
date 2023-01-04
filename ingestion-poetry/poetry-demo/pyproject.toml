@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "poetry-demo"
+version = "0.1.0"
+description = ""
+authors = ["Pere Miquel Brull <pmbrull@getcollate.io>"]
+readme = "README.md"
+packages = [{include = "poetry_demo"}]
+
+[tool.poetry.dependencies]
+python = "^3.7.1,<3.10"
+commonregex = "1.5.3"
+openmetadata-ingestion = { version = "0.13.1.2", extras = ["bigquery"] }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
