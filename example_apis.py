@@ -67,10 +67,12 @@ from metadata.generated.schema.entity.services.storageService import StorageServ
 
 from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
 from metadata.generated.schema.type.entityLineage import EntitiesEdge
+from metadata.generated.schema.type import basic, entityReference, schema, tagLabel
+
 
 
 # to connect to OpenMetadata Server
-security_config = OpenMetadataJWTClientConfig(jwtToken="eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJpbmdlc3Rpb24tYm90IiwiaXNCb3QiOnRydWUsImlzcyI6Im9wZW4tbWV0YWRhdGEub3JnIiwiaWF0IjoxNjY1ODk3NDY1LCJlbWFpbCI6ImluZ2VzdGlvbi1ib3RAb3Blbm1ldGFkYXRhLm9yZyJ9.bKEPMfPJpPbCgCIrCBOgouRKt8zB_Hy1PcMx2I58W0DcF55iG34ZV5oyI3aVvMs7CMrqc8_mnLj3jrjmKqEpuGyuFB_O14G9pb9FHW5qAnsPLwxVGaOyvnwL6JFaOxSM5nfWZDolRvThKD3lvBpzhPXLD-m8zf5F2HnRTGZ5MUE4otjj7dimVYy4ncXGxJq-E7YXxwCYnk7dVwM0atXcYIAP4zHyGQBykqulAsrmXUViifK-ZbSsydkWbgVECb5mx8D-iUC_CYr4hX_DnR_-8is0PfvLHNVERMWRfDN7_qWz2R_C1oG8_PCxRHpOsrCq_zcWjDGSckdGGJdLZoDJqw")
+security_config = OpenMetadataJWTClientConfig(jwtToken="eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJpbmdlc3Rpb24tYm90IiwiaXNCb3QiOnRydWUsImlzcyI6Im9wZW4tbWV0YWRhdGEub3JnIiwiaWF0IjoxNjcxNzMwMTEzLCJlbWFpbCI6ImluZ2VzdGlvbi1ib3RAb3Blbm1ldGFkYXRhLm9yZyJ9.KmoEq1WJHz5LDdmUZ_nmNT0X7lpuBmc4OUL4wnMcNfJOERiIzeSJQQ8AnM5p-ctw5byVHV3KnoTfZfU2DGcWYNsVrpTXuxqnDYM6CkC8fXxoTmk9U9AyAy_0N8zEuDVsUF2Vviw4fcnx_AXl0wYDJknDTv3FeJWxjuJjEBmQmonhvIJ9wm1e2QNx5xDfOPtnmitj7y__b3DPdxuTSdQcrMOciwKnd8kmgEscbsKfaG30iNgCUGWDmRaHuRX4QOhcvQ45WIFpkUFggsKLPCLGWZ_Vb0khv3R8mV0RMZAaIZ6a8fZVpi6Juad_nyhiUlkS4pwXywuFJeUJI4sm70KAew")
 server_config = OpenMetadataConnection(hostPort="http://localhost:8585/api", securityConfig=security_config, authProvider=AuthProvider.openmetadata)
 metadata = OpenMetadata(server_config)
 metadata.health_check() # we are able to connect to OpenMetadata Server
@@ -201,7 +203,7 @@ table_b = CreateTableRequest(
 
 table_a_entity = metadata.create_or_update(data=table_a)
 table_b_entity = metadata.create_or_update(data=table_b)
-
+metadata.patch_tag(Table,table_b_entity.id,'PII.None')
 
 # Create pipeline
 #
@@ -223,8 +225,10 @@ topic_request = CreateTopicRequest(
     description="Kafka topic to capture the customer events such as location updates or profile updates",
     partitions=56,
     retentionSize=455858109,
-    schemaType="Avro",
-    schemaText="{\"namespace\":\"org.open-metadata.kafka\",\"name\":\"Customer\",\"type\":\"record\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"email\",\"type\":\"string\"},{\"name\":\"address_line_1\",\"type\":\"string\"},{\"name\":\"address_line_2\",\"type\":\"string\"},{\"name\":\"post_code\",\"type\":\"string\"},{\"name\":\"country\",\"type\":\"string\"}]}",
+    messageSchema=schema.Topic(
+        schemaType="Avro",
+        schemaText="{\"namespace\":\"org.open-metadata.kafka\",\"name\":\"Customer\",\"type\":\"record\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"email\",\"type\":\"string\"},{\"name\":\"address_line_1\",\"type\":\"string\"},{\"name\":\"address_line_2\",\"type\":\"string\"},{\"name\":\"post_code\",\"type\":\"string\"},{\"name\":\"country\",\"type\":\"string\"}]}",
+    ),
     service=EntityReference(
         id=messaging_service_entity.id, type="messagingService"
     )
