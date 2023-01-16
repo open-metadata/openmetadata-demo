@@ -57,6 +57,7 @@ class CsvModel(BaseModel):
     name: str
     column_names: List[str]
     column_types: List[str]
+
     @validator("column_names", "column_types", pre=True)
     def str_to_list(cls, value):
         """
@@ -68,7 +69,7 @@ class CsvModel(BaseModel):
 class CsvConnector(Source):
     """
     Custom connector to ingest Database metadata.
-    
+
     We'll suppose that we can read metadata from a CSV
     with a custom database name from a business_unit connection option.
     """
@@ -81,19 +82,27 @@ class CsvConnector(Source):
         self.metadata = OpenMetadata(self.metadata_config)
         self.status = SourceStatus()
 
-        self.source_directory: str = getattr(self.service_connection.connectionOptions, "source_directory")
+        self.source_directory: str = getattr(
+            self.service_connection.connectionOptions, "source_directory"
+        )
         if not self.source_directory:
-            raise InvalidCsvConnectorException("Missing source_directory connection option")
+            raise InvalidCsvConnectorException(
+                "Missing source_directory connection option"
+            )
 
-        self.business_unit: str = getattr(self.service_connection.connectionOptions, "business_unit")
+        self.business_unit: str = getattr(
+            self.service_connection.connectionOptions, "business_unit"
+        )
         if not self.business_unit:
-            raise InvalidCsvConnectorException("Missing business_unit connection option")
+            raise InvalidCsvConnectorException(
+                "Missing business_unit connection option"
+            )
 
         self.data: Optional[List[CsvModel]] = None
 
     @classmethod
     def create(
-            cls, config_dict: dict, metadata_config: OpenMetadataConnection
+        cls, config_dict: dict, metadata_config: OpenMetadataConnection
     ) -> "CsvConnector":
         config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
         connection: CustomDatabaseConnection = config.serviceConnection.__root__.config
@@ -164,11 +173,10 @@ class CsvConnector(Source):
         Iterate over the data list to create tables
         """
         database_schema: DatabaseSchema = self.metadata.get_by_name(
-            entity=DatabaseSchema, fqn=f"{self.config.serviceName}.{self.business_unit}.default"
+            entity=DatabaseSchema,
+            fqn=f"{self.config.serviceName}.{self.business_unit}.default",
         )
-        schema_ref = EntityReference(
-            id=database_schema.id, type="databaseSchema"
-        )
+        schema_ref = EntityReference(id=database_schema.id, type="databaseSchema")
 
         for row in self.data:
             yield CreateTableRequest(
@@ -180,7 +188,7 @@ class CsvConnector(Source):
                         dataType=model_col[1],
                     )
                     for model_col in zip(row.column_names, row.column_types)
-                ]
+                ],
             )
 
     def next_record(self) -> Iterable[Entity]:
@@ -189,7 +197,6 @@ class CsvConnector(Source):
         yield from self.yield_business_unit_db()
         yield from self.yield_default_schema()
         yield from self.yield_data()
-
 
     def get_status(self) -> SourceStatus:
         return self.status
