@@ -3,9 +3,7 @@ from typing import Dict, Set
 
 from setuptools import find_namespace_packages, setup, find_packages
 
-base_requirements = {
-    "openmetadata-ingestion==0.12.2"
-}
+base_requirements = {"openmetadata-ingestion==0.12.2"}
 
 setup(
     name="custom-connector",
@@ -17,5 +15,5 @@ setup(
     long_description_content_type="text/markdown",
     python_requires=">=3.7",
     install_requires=list(base_requirements),
-    packages=find_packages(include=['connector', 'connector.*']),
+    packages=find_packages(include=["connector", "connector.*"]),
 )

@@ -1,0 +1,3 @@
+name,column_names,column_types
+table1,c1;c2,INT;DATE
+table2,c1;c2;c3,STRING;STRING;STRING

@@ -57,3 +57,12 @@ In the example we prepared a Database Connector. Thus, go to `Database Services 
 and set the `Source Python Class Name` as `connector.my_awesome_connector.MyAwesomeConnector`.
 
 Note how we are specifying the full module name so that the Ingestion Framework can import the Source class.
+
+---
+
+## CSV Custom Connector
+
+To run the CSV Custom Connector, the Python class will be `connector.my_csv_connector.CsvConnector` and we'll need
+to set the following Connection Options:
+- `source_directory`: `/opt/airflow/ingestion/sample.csv`
+- `business_unit`: Any name you'd like (preferably no special characters).

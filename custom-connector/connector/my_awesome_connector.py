@@ -58,7 +58,7 @@ class MyAwesomeConnector(Source):
 
     @classmethod
     def create(
-            cls, config_dict: dict, metadata_config: OpenMetadataConnection
+        cls, config_dict: dict, metadata_config: OpenMetadataConnection
     ) -> "MyAwesomeConnector":
         config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
         return cls(config, metadata_config)
@@ -96,4 +96,3 @@ class MyAwesomeConnector(Source):
 
     def close(self):
         pass
-
