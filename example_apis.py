@@ -255,3 +255,10 @@ add_lineage_request = AddLineageRequest(
 )
 
 created_lineage = metadata.add_lineage(data=add_lineage_request)
+
+## Fetching Users
+
+from metadata.generated.schema.entity.teams.user import User
+
+# The name is whatever comes before the @ in their email. For example, admin@openmetadata.org you can fetch via:
+user = metadata.get_by_name(entity=User, fqn="admin")
