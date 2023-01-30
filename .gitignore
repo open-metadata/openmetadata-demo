@@ -109,3 +109,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# local docker volume
+**/docker-volume
