@@ -204,6 +204,9 @@ table_b = CreateTableRequest(
 table_a_entity = metadata.create_or_update(data=table_a)
 table_b_entity = metadata.create_or_update(data=table_b)
 metadata.patch_tag(Table,table_b_entity.id,'PII.None')
+metadata.patch_tag(Table, table_b_entity.id, 'PII.None', False, 'remove')
+metadata.patch_column_tag(table_b_entity.id.__root__, 'id', 'PII.None')
+metadata.patch_column_tag(table_b_entity.id.__root__, 'id', 'PII.None', False, 'remove')
 
 # Create pipeline
 #
