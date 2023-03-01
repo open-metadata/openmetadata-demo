@@ -82,17 +82,13 @@ class CsvConnector(Source):
         self.metadata = OpenMetadata(self.metadata_config)
         self.status = SourceStatus()
 
-        self.source_directory: str = getattr(
-            self.service_connection.connectionOptions, "source_directory"
-        )
+        self.source_directory: str = self.service_connection.connectionOptions.__root__.get("source_directory")
         if not self.source_directory:
             raise InvalidCsvConnectorException(
                 "Missing source_directory connection option"
             )
 
-        self.business_unit: str = getattr(
-            self.service_connection.connectionOptions, "business_unit"
-        )
+        self.business_unit: str = self.service_connection.connectionOptions.__root__.get("business_unit")
         if not self.business_unit:
             raise InvalidCsvConnectorException(
                 "Missing business_unit connection option"
