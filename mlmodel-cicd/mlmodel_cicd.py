@@ -86,13 +86,13 @@ def get_data_source_from_fqn(metadata: OpenMetadata, fqn: Optional[str]) -> Opti
     return None
 
 
-def get_or_create_ml_model_service(metadata: OpenMetadata, service_name: str) -> EntityReference:
+def get_or_create_ml_model_service(metadata: OpenMetadata, service_name: str) -> str:
     """
     Check if the service exists, otherwise create it
     """
     service_entity: MlModelService = metadata.get_by_name(entity=MlModelService, fqn=service_name)
     if not service_entity:
-        service_entity = metadata.create_or_update(
+        metadata.create_or_update(
             CreateMlModelServiceRequest(
                 name=service_name,
                 serviceType=MlModelServiceType.CustomMlModel,
@@ -105,10 +105,7 @@ def get_or_create_ml_model_service(metadata: OpenMetadata, service_name: str) ->
             )
         )
 
-    return EntityReference(
-        id=service_entity.id.__root__,
-        type="mlmodelService"
-    )
+    return service_name
 
 
 def update_openmetadata(raw_meta: dict) -> None:

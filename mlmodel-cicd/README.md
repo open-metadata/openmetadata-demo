@@ -3,8 +3,8 @@
 The goal of this demo is learning how to leverage the OpenMetadata API to create a CICD process
 that will publish the changes on our ML Models once they go to PROD.
 
-**OBS**: Note that this demo is based on OpenMetadata version 0.13.0. If playing locally with the `openmetadata-ingestion`
-package, make sure to install `openmetadata-ingestion==0.13.0`
+**OBS**: Note that this demo is based on OpenMetadata version 1.0.1. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion~=1.0.1`
 
 ## Requirements
 
