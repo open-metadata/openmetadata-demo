@@ -14,7 +14,6 @@ from metadata.generated.schema.entity.data.databaseSchema import DatabaseSchema
 from metadata.generated.schema.entity.data.table import (
     Column,
     Table,
-    TableConstraint,
     TablePartition,
     TableProfilerConfig,
 )
@@ -26,7 +25,7 @@ from metadata.generated.schema.type.entityReference import EntityReference
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.utils import fqn
 
-from rename.helpers import get_owner, get_tag_label
+from rename.helpers import get_owner, get_table_constraint, get_tag_label
 from rename.runner import TopologyRunner
 from rename.topology import ServiceTopology, TopologyContext, TopologyNode
 
@@ -145,7 +144,7 @@ class DatabaseServiceSource(TopologyRunner):
         yield from self.list_all_raw_entities(
             entity=Table,
             params={
-                "databaseSchema": fqn.build(
+                "database": fqn.build(
                     metadata=self.metadata,
                     entity_type=DatabaseSchema,
                     service_name=self.input_service_name,
@@ -174,10 +173,7 @@ class DatabaseServiceSource(TopologyRunner):
                     columns=[
                         Column.parse_obj(column) for column in table.get("columns")
                     ],
-                    # We need to review this
-                    tableConstraints=TableConstraint.parse_obj(
-                        table.get("tableConstraints")
-                    )
+                    tableConstraints=get_table_constraint(table.get("tableConstraints"))
                     if table.get("tableConstraints")
                     else None,
                     tablePartition=TablePartition.parse_obj(table.get("tablePartition"))
