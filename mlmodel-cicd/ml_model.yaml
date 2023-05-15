@@ -7,11 +7,32 @@ description: |
 
 algorithm: XGBoost
 target: expected_time
-
+tags:
+  - tagFQN : PII.None
+    description: Tag None
+    labelType: Manual
+    state: Confirmed
+    source: Classification
+  - tagFQN: PersonalData.Personal
+    description: Personal Data Tag
+    labelType: Manual
+    state: Confirmed
+    source: Classification
+  - tagFQN: SmartMed.Average
+    description: Smartmed Tag
+    labelType: Manual
+    state: Confirmed
+    source: Classification
 mlFeatures:
   - name: last_update_bucket
     dataType: categorical
     featureAlgorithm: Bucketing
+    tags:
+      - tagFQN: PII.None
+        description: Tag None
+        labelType: Manual
+        state: Confirmed
+        source: Classification
     featureSources:
       - name: orders
         dataType: timestamp
