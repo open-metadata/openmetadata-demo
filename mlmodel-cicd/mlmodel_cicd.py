@@ -135,11 +135,31 @@ def update_openmetadata(raw_meta: dict) -> None:
         description=raw_meta["description"],
         algorithm=raw_meta["algorithm"],
         target=raw_meta["target"],
+        tags=[
+            TagLabel(
+                tagFQN=ml_tag["tagFQN"],
+                description=ml_tag["description"],
+                labelType=ml_tag["labelType"],
+                state=ml_tag["state"],
+                source=ml_tag["source"]
+            )
+            for ml_tag in raw_meta.get("tags") or []
+        ],
         mlFeatures=[
             MlFeature(
                 name=ml_feature["name"],
                 dataType=ml_feature["dataType"],
                 featureAlgorithm=ml_feature.get("featureAlgorithm"),
+                tags=[
+                    TagLabel(
+                        tagFQN=ml_tagFeature["tagFQN"],
+                        description=ml_tagFeature["description"],
+                        labelType=ml_tagFeature["labelType"],
+                        state=ml_tagFeature["state"],
+                        source=ml_tagFeature["source"]
+                    )
+                    for ml_tagFeature in ml_feature.get("tags") or []
+                ],
                 featureSources=[
                     FeatureSource(
                         name=feature_source["name"],
@@ -198,6 +218,36 @@ def run_workflow() -> None:
 
     # 3. Update metadata
     update_openmetadata(raw_meta)
+
+def createTagClassificationRaw(metadata, raw_meta) -> None:
+    for ml_tag in raw_meta.get("tags"):
+
+        #print( ml_tag["tagFQN"])
+        class_tag=ml_tag["tagFQN"].split(".")
+        classificationName=class_tag[0]
+        tagName=class_tag[1]
+        createTagClassification(metadata,classificationName,tagName)
+
+def createTagClassification(metadata, classification_name, tag_name) -> None:
+    from metadata.generated.schema.api.classification.createClassification import (
+        CreateClassificationRequest,
+    )
+    from metadata.generated.schema.api.classification.createTag import CreateTagRequest
+
+    classification_request = CreateClassificationRequest(
+        name=classification_name,
+        description="Sample classification.",
+    )
+
+    metadata.create_or_update(classification_request)
+
+    tag_request = CreateTagRequest(
+        classification=classification_request.name,
+        name=tag_name,
+        description="Sample Tag.",
+    )
+
+    metadata.create_or_update(tag_request)
 
 
 if __name__ == "__main__":
