@@ -113,8 +113,8 @@ AUTHENTICATION_PUBLIC_KEYS=[http://host.docker.internal:8081/realms/data-sec/pro
 SERVER_HOST_API_URL=https://host.docker.internal/api
 
 # Airflow SSL Configuration
-AIRFLOW_VERIFY_SSL=validate # force SSL validation
-AIRFLOW_SSL_CERT_PATH=/tmp/om-site.crt # the public cert used for the validations
+PIPELINE_SERVICE_CLIENT_VERIFY_SSL=validate # force SSL validation
+PIPELINE_SERVICE_CLIENT_SSL_CERT_PATH=/tmp/om-site.crt # the public cert used for the validations
 ```
 
 Secondly, we have to stop and remove `openmetadata_server` and `openmetadata_ingestion` instances:
