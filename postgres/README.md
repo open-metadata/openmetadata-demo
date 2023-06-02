@@ -10,8 +10,8 @@ The goal of the demo is to extract different metadata from a Postgres database:
 - Lineage from queries
 - Profiling & Tests
 
-**OBS**: Note that this demo is based on OpenMetadata version 0.13.0. If playing locally with the `openmetadata-ingestion`
-package, make sure to install `openmetadata-ingestion==0.13.0`
+**OBS**: Note that this demo is based on OpenMetadata version 1.0.3. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion~=1.0.3`
 
 ## Requirements
 
@@ -109,6 +109,7 @@ What we'll do:
 1. `DROP TABLE public.bad_actor;`
 2. `ALTER TABLE public.actor DROP COLUMN last_update;`
 3. `ALTER TABLE public.film_actor ADD money BIGINT DEFAULT 9999999;`
+4. `CREATE TABLE actor_catalog AS SELECT first_name AS name, last_name AS surname FROM actor;`
 
 **Question**: What has happened in the assets version?
 
@@ -118,13 +119,7 @@ What we'll do:
 
 ## Lineage Ingestion
 
-Let's create a new table in the database:
-
-```sql
-create table actor_catalog as select first_name as name, last_name as surname from actor;
-```
-
-Then, run the Metadata Ingestion workflow + the Lineage Workflow. 
+Now run the Lineage Workflow 
 
 **Question**: What will we see when checking the lineage tab from `actor_catalog`? Can we check which SQL query 
 powered this transformation?
@@ -200,5 +195,5 @@ with (requires Python >= 3.7):
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install jupyter notebook openmetadata-ingestion==0.13.0.1
+pip install jupyter notebook openmetadata-ingestion~=1.0.3
 ```
