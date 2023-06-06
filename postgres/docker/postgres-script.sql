@@ -44,6 +44,36 @@ ALTER TABLE ONLY public.actor
 ALTER TABLE ONLY public.film_actor
     ADD CONSTRAINT film_actor_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.actor(actor_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
+CREATE SEQUENCE public.sensitive_customers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE public.sensitive_customers_id_seq OWNER TO openmetadata_user;
+
+CREATE TABLE public.sensitive_customers (
+    customer_id integer DEFAULT nextval('public.actor_actor_id_seq'::regclass) NOT NULL,
+    user_name VARCHAR(50),
+    SSN VARCHAR(50),
+    address VARCHAR(50),
+    DWH_X10 VARCHAR(50)
+);
+
+insert into public.sensitive_customers (user_name, SSN, address, DWH_X10) values
+('Harsha', NULL, '2240 W Ina Rd', 'harsha@gmail.com'),
+('Suresh', NULL, '7192 Kalanianaole Hwy', 'suresh@gmail.com'),
+('Sanket', NULL, '5900 N Cannon Ave', 'sanket@gmail.com'),
+('Mayur', NULL, '4350 Main St', 'mayur@gmail.com'),
+('Teddy', NULL, '903 W Main St', 'teddy@gmail.com'),
+('Akash', NULL, '2220 Coit Rd', 'akash@gmail.com'),
+('Shilpa', NULL, '7 Southside Dr', 'shilpa@gmail.com'),
+('Chirag', NULL, '2929 S 25th Ave', 'chirag@gmail.com');
+
+ALTER TABLE public.sensitive_customers OWNER TO openmetadata_user;
+
+
 INSERT INTO public.actor VALUES (1, 'PENELOPE', 'GUINESS', '2022-02-15 09:34:33+00');
 INSERT INTO public.actor VALUES (2, 'NICK', 'WAHLBERG', '2022-02-15 09:34:33+00');
 INSERT INTO public.actor VALUES (3, 'ED', 'CHASE', '2022-02-15 09:34:33+00');
@@ -286,5 +316,9 @@ INSERT INTO public.film_actor VALUES (10, 914, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 929, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 930, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 964, '2022-02-15 10:05:03+00');
+
+-- Run queries to have usage data available
+select * from actor_catalog;
+select max(name) as super_KPI from actor_catalog;
 
 COMMIT;

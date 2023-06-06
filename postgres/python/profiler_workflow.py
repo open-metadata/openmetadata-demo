@@ -13,7 +13,7 @@ Custom script to run the Profiler Ingestion
 """
 import yaml
 
-from metadata.orm_profiler.api.workflow import ProfilerWorkflow
+from metadata.profiler.api.workflow import ProfilerWorkflow
 
 
 config = """
@@ -25,12 +25,13 @@ source:
       type: Postgres
       username: openmetadata_user
       password: password
-      hostPort: postgres:5432
+      hostPort: postgresql:5432
       database: postgres
   sourceConfig:
     config:
       type: Profiler
       generateSampleData: true
+      processPiiSensitive: true
       schemaFilterPattern:
         includes:
           - public
