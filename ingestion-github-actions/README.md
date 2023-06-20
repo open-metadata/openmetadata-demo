@@ -138,7 +138,7 @@ jobs:
       run: |
         python -m venv env
         source env/bin/activate
-        pip install "openmetadata-ingestion[snowflake]~=1.0.2"
+        pip install "openmetadata-ingestion[snowflake]==1.0.2.0"
 
     - name: Run Ingestion
       run: |
