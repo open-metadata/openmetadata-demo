@@ -12,15 +12,13 @@ source:
       type: Snowflake
       username: {os.getenv('SNOWFLAKE_USERNAME')}
       password: {os.getenv('SNOWFLAKE_PASSWORD')}
+      database: {os.getenv('SNOWFLAKE_DATABASE')}
       warehouse: {os.getenv('SNOWFLAKE_WAREHOUSE')}
       account: {os.getenv('SNOWFLAKE_ACCOUNT')}
   sourceConfig:
     config:
       type: DatabaseMetadata
       includeViews: true
-      databaseFilterPattern:
-        includes:
-        - SNOWFLAKE_SAMPLE_DATA
       schemaFilterPattern:
         excludes:
         - INFORMATION_SCHEMA
