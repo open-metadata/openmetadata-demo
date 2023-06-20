@@ -1,0 +1,60 @@
+name: ingest-snowflake
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Pick up the repository code, where the script lives
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Prepare Python in the GitHub Agent
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    # Install the dependencies. Make sure that the client version matches the server!
+    - name: Install Deps
+      run: |
+        python -m venv env
+        source env/bin/activate
+        pip install "openmetadata-ingestion[snowflake]~=1.0.2"
+
+    - name: Run Ingestion
+      id: ingestion
+      continue-on-error: true
+      run: |
+        source env/bin/activate
+        python ingestion-github-actions/snowflake_ingestion.py
+      # Add the env vars we need to load the snowflake credentials
+      env:
+        SNOWFLAKE_USERNAME: ${{ secrets.SNOWFLAKE_USERNAME }}
+        SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        SBX_JWT: ${{ secrets.SBX_JWT }}
+
+    - name: Slack on Failure
+      if: steps.ingestion.outcome != 'success'
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        payload: |
+          {
+            "text": "🔥 Metadata ingestion failed! 🔥"
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+    - name: Force failure
+      if: steps.ingestion.outcome != 'success'
+      run: |
+          exit 1
