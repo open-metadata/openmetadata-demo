@@ -32,7 +32,7 @@ sink:
   config: {{}}
 workflowConfig:
   openMetadataServerConfig:
-    hostPort: https://sandbox.open-metadata.org
+    hostPort: https://sandbox.open-metadata.org/api
     authProvider: openmetadata
     securityConfig:
       jwtToken: {os.getenv('SBX_JWT')}

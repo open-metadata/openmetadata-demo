@@ -200,3 +200,5 @@ We have:
    send any payload to a specific Slack channel. You can find more info on how to setup a Slack Webhook [here](https://api.slack.com/messaging/webhooks).
 3. If our `ingestion` step fails, we still want to mark the action as failed, so we are forcing the failure we
    skipped before.
+
+![img.png](slack-msg.png)
