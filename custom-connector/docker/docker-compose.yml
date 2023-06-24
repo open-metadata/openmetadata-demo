@@ -17,12 +17,14 @@ volumes:
 services:
   mysql:
     container_name: openmetadata_mysql
-    image: openmetadata/db:0.13.2
+    image: docker.getcollate.io/openmetadata/db:1.0.5
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password
     expose:
       - 3306
+    ports:
+      - "3306:3306"
     networks:
       - app_net
     healthcheck:
@@ -46,9 +48,8 @@ services:
   openmetadata-server:
     container_name: openmetadata_server
     restart: always
-    image: openmetadata/server:0.13.2
+    image: docker.getcollate.io/openmetadata/server:1.0.5
     environment:
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # OpenMetadata Server Authentication Configuration
       AUTHORIZER_CLASS_NAME: ${AUTHORIZER_CLASS_NAME:-org.openmetadata.service.security.DefaultAuthorizer}
       AUTHORIZER_REQUEST_FILTER: ${AUTHORIZER_REQUEST_FILTER:-org.openmetadata.service.security.JwtFilter}
@@ -60,7 +61,7 @@ services:
       AUTHORIZER_ENABLE_SECURE_SOCKET: ${AUTHORIZER_ENABLE_SECURE_SOCKET:-false}
       AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-basic}
       CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME: ${CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME:-""}
-      AUTHENTICATION_PUBLIC_KEYS: ${AUTHENTICATION_PUBLIC_KEYS:-[http://localhost:8585/api/v1/config/jwks]}
+      AUTHENTICATION_PUBLIC_KEYS: ${AUTHENTICATION_PUBLIC_KEYS:-[http://localhost:8585/api/v1/system/config/jwks]}
       AUTHENTICATION_AUTHORITY: ${AUTHENTICATION_AUTHORITY:-https://accounts.google.com}
       AUTHENTICATION_CLIENT_ID: ${AUTHENTICATION_CLIENT_ID:-""}
       AUTHENTICATION_CALLBACK_URL: ${AUTHENTICATION_CALLBACK_URL:-""}
@@ -71,34 +72,11 @@ services:
       RSA_PRIVATE_KEY_FILE_PATH: ${RSA_PRIVATE_KEY_FILE_PATH:-"./conf/private_key.der"}
       JWT_ISSUER: ${JWT_ISSUER:-"open-metadata.org"}
       JWT_KEY_ID: ${JWT_KEY_ID:-"Gb389a-9f76-gdjs-a92j-0242bk94356"}
-      # OpenMetadata Server Airflow Configuration
-      AIRFLOW_HOST: ${AIRFLOW_HOST:-http://ingestion:8080}
+      # OpenMetadata Server Pipeline Service Client Configuration
+      PIPELINE_SERVICE_CLIENT_ENDPOINT: ${PIPELINE_SERVICE_CLIENT_ENDPOINT:-http://ingestion:8080}
       SERVER_HOST_API_URL: ${SERVER_HOST_API_URL:-http://openmetadata-server:8585/api}
-      AIRFLOW_AUTH_PROVIDER: ${AIRFLOW_AUTH_PROVIDER:-no-auth}
-      # OpenMetadata Airflow Azure SSO Configuration
-      OM_AUTH_AIRFLOW_AZURE_CLIENT_SECRET: ${OM_AUTH_AIRFLOW_AZURE_CLIENT_SECRET:-""}
-      OM_AUTH_AIRFLOW_AZURE_AUTHORITY_URL: ${OM_AUTH_AIRFLOW_AZURE_AUTHORITY_URL:-""}
-      OM_AUTH_AIRFLOW_AZURE_SCOPES: ${OM_AUTH_AIRFLOW_AZURE_SCOPES:-[]}
-      OM_AUTH_AIRFLOW_AZURE_CLIENT_ID: ${OM_AUTH_AIRFLOW_AZURE_CLIENT_ID:-""}
-      # OpenMetadata Airflow Google SSO Configuration
-      OM_AUTH_AIRFLOW_GOOGLE_SECRET_KEY_PATH: ${OM_AUTH_AIRFLOW_GOOGLE_SECRET_KEY_PATH:- ""}
-      OM_AUTH_AIRFLOW_GOOGLE_AUDIENCE: ${OM_AUTH_AIRFLOW_GOOGLE_AUDIENCE:-"https://www.googleapis.com/oauth2/v4/token"}
-      # OpenMetadata Airflow Okta SSO Configuration
-      OM_AUTH_AIRFLOW_OKTA_CLIENT_ID: ${OM_AUTH_AIRFLOW_OKTA_CLIENT_ID:-""}
-      OM_AUTH_AIRFLOW_OKTA_ORGANIZATION_URL: ${OM_AUTH_AIRFLOW_OKTA_ORGANIZATION_URL:-""}
-      OM_AUTH_AIRFLOW_OKTA_PRIVATE_KEY: ${OM_AUTH_AIRFLOW_OKTA_PRIVATE_KEY:-""}
-      OM_AUTH_AIRFLOW_OKTA_SA_EMAIL: ${OM_AUTH_AIRFLOW_OKTA_SA_EMAIL:-""}
-      OM_AUTH_AIRFLOW_OKTA_SCOPES: ${OM_AUTH_AIRFLOW_OKTA_SCOPES:-[]}
-      # OpenMetadata Airflow Auth0 SSO Configuration
-      OM_AUTH_AIRFLOW_AUTH0_CLIENT_ID: ${OM_AUTH_AIRFLOW_AUTH0_CLIENT_ID:-""}
-      OM_AUTH_AIRFLOW_AUTH0_CLIENT_SECRET: ${OM_AUTH_AIRFLOW_AUTH0_CLIENT_SECRET:-""}
-      OM_AUTH_AIRFLOW_AUTH0_DOMAIN_URL: ${OM_AUTH_AIRFLOW_AUTH0_DOMAIN_URL:-""}
-      # OpenMetadata Airflow Custom OIDC SSO Configuration
-      OM_AUTH_AIRFLOW_CUSTOM_OIDC_CLIENT_ID: ${OM_AUTH_AIRFLOW_CUSTOM_OIDC_CLIENT_ID:-""}
-      OM_AUTH_AIRFLOW_CUSTOM_OIDC_SECRET_KEY: ${OM_AUTH_AIRFLOW_CUSTOM_OIDC_SECRET_KEY:-""}
-      OM_AUTH_AIRFLOW_CUSTOM_OIDC_TOKEN_ENDPOINT_URL: ${OM_AUTH_AIRFLOW_CUSTOM_OIDC_TOKEN_ENDPOINT_URL:-""}
-      # OpenMetadata Airflow JWT Token Configuration
-      OM_AUTH_JWT_TOKEN: ${OM_AUTH_JWT_TOKEN:-""}
+      PIPELINE_SERVICE_CLIENT_VERIFY_SSL: ${PIPELINE_SERVICE_CLIENT_VERIFY_SSL:-"no-ssl"}
+      PIPELINE_SERVICE_CLIENT_SSL_CERT_PATH: ${PIPELINE_SERVICE_CLIENT_SSL_CERT_PATH:-""}
       # Database configuration for MySQL
       DB_DRIVER_CLASS: ${DB_DRIVER_CLASS:-com.mysql.cj.jdbc.Driver}
       DB_SCHEME: ${DB_SCHEME:-mysql}
@@ -108,17 +86,22 @@ services:
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
       OM_DATABASE: ${OM_DATABASE:-openmetadata_db}
-      # Airflow SSL Configurations
-      AIRFLOW_VERIFY_SSL: ${AIRFLOW_VERIFY_SSL:-"no-ssl"}
-      AIRFLOW_SSL_CERT_PATH: ${AIRFLOW_SSL_CERT_PATH:-""}
       # ElasticSearch Configurations
-      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:- elasticsearch}
       ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT:-9200}
       ELASTICSEARCH_SCHEME: ${ELASTICSEARCH_SCHEME:-http}
       ELASTICSEARCH_USER: ${ELASTICSEARCH_USER:-""}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-""}
       # Heap OPTS Configurations
       OPENMETADATA_HEAP_OPTS: ${OPENMETADATA_HEAP_OPTS:--Xmx1G -Xms1G}
+      # Application Config
+      OM_CUSTOM_LOGO_URL_PATH: ${OM_CUSTOM_LOGO_URL_PATH:-""}
+      OM_CUSTOM_MONOGRAM_URL_PATH: ${OM_CUSTOM_MONOGRAM_URL_PATH:-""}
+      OM_MAX_FAILED_LOGIN_ATTEMPTS: ${OM_MAX_FAILED_LOGIN_ATTEMPTS:-3}
+      OM_LOGIN_ACCESS_BLOCK_TIME: ${OM_LOGIN_ACCESS_BLOCK_TIME:-600}
+      OM_JWT_EXPIRY_TIME: ${OM_JWT_EXPIRY_TIME:-3600}
+      # Mask passwords values in UI
+      MASK_PASSWORDS_API: ${MASK_PASSWORDS_API:-false}
     expose:
       - 8585
       - 8586
@@ -148,15 +131,15 @@ services:
       openmetadata-server:
         condition: service_healthy
     environment:
-      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/opt/airflow/dag_generated_configs"
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: ${AIRFLOW_DB_HOST:-mysql}
+      DB_PORT: ${AIRFLOW_DB_PORT:-3306}
       AIRFLOW_DB: ${AIRFLOW_DB:-airflow_db}
-      AIRFLOW_DB_SCHEME: ${AIRFLOW_DB_SCHEME:-mysql+pymysql}
-      DB_USER: ${DB_USER:-airflow_user}
-      DB_PASSWORD: ${DB_PASSWORD:-airflow_pass}
+      DB_SCHEME: ${AIRFLOW_DB_SCHEME:-mysql+pymysql}
+      DB_USER: ${AIRFLOW_DB_USER:-airflow_user}
+      DB_PASSWORD: ${AIRFLOW_DB_PASSWORD:-airflow_pass}
     entrypoint: /bin/bash
     command:
       - "/opt/airflow/ingestion_dependency.sh"
