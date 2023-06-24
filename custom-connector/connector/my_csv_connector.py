@@ -82,13 +82,17 @@ class CsvConnector(Source):
         self.metadata = OpenMetadata(self.metadata_config)
         self.status = SourceStatus()
 
-        self.source_directory: str = self.service_connection.connectionOptions.__root__.get("source_directory")
+        self.source_directory: str = (
+            self.service_connection.connectionOptions.__root__.get("source_directory")
+        )
         if not self.source_directory:
             raise InvalidCsvConnectorException(
                 "Missing source_directory connection option"
             )
 
-        self.business_unit: str = self.service_connection.connectionOptions.__root__.get("business_unit")
+        self.business_unit: str = (
+            self.service_connection.connectionOptions.__root__.get("business_unit")
+        )
         if not self.business_unit:
             raise InvalidCsvConnectorException(
                 "Missing business_unit connection option"
@@ -139,14 +143,10 @@ class CsvConnector(Source):
         service_entity: DatabaseService = self.metadata.get_by_name(
             entity=DatabaseService, fqn=self.config.serviceName
         )
-        service_id = service_entity.id
 
         yield CreateDatabaseRequest(
             name=self.business_unit,
-            service=EntityReference(
-                id=service_id,
-                type="databaseService",
-            ),
+            service=service_entity.fullyQualifiedName,
         )
 
     def yield_default_schema(self):
@@ -154,14 +154,10 @@ class CsvConnector(Source):
         database_entity: Database = self.metadata.get_by_name(
             entity=Database, fqn=f"{self.config.serviceName}.{self.business_unit}"
         )
-        database_id = database_entity.id
 
         yield CreateDatabaseSchemaRequest(
             name="default",
-            database=EntityReference(
-                id=database_id,
-                type="database",
-            ),
+            database=database_entity.fullyQualifiedName,
         )
 
     def yield_data(self):
@@ -172,12 +168,11 @@ class CsvConnector(Source):
             entity=DatabaseSchema,
             fqn=f"{self.config.serviceName}.{self.business_unit}.default",
         )
-        schema_ref = EntityReference(id=database_schema.id, type="databaseSchema")
 
         for row in self.data:
             yield CreateTableRequest(
                 name=row.name,
-                databaseSchema=schema_ref,
+                databaseSchema=database_schema.fullyQualifiedName,
                 columns=[
                     Column(
                         name=model_col[0],
@@ -188,7 +183,6 @@ class CsvConnector(Source):
             )
 
     def next_record(self) -> Iterable[Entity]:
-
         yield from self.yield_create_request_database_service()
         yield from self.yield_business_unit_db()
         yield from self.yield_default_schema()

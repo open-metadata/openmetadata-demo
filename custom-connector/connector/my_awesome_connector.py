@@ -72,20 +72,15 @@ class MyAwesomeConnector(Source):
         )
 
     def next_record(self) -> Iterable[Entity]:
-
         yield from self.yield_create_request_database_service(self.config)
 
         service_entity: DatabaseService = self.metadata.get_by_name(
             entity=DatabaseService, fqn=self.config.serviceName
         )
-        service_id = service_entity.id
 
         yield CreateDatabaseRequest(
             name="awesome-database",
-            service=EntityReference(
-                id=service_id,
-                type="databaseService",
-            ),
+            service=service_entity.fullyQualifiedName,
         )
 
     def get_status(self) -> SourceStatus:
