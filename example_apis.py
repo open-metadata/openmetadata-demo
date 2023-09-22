@@ -287,7 +287,7 @@ created_lineage = metadata.add_lineage(data=add_lineage_request)
 ## Create Storage Containers
 container_request_json = json.loads("""
   {
-    "name": "transactions",
+    "name": "transactions2",
     "displayName": "Company Transactions",
     "description": "Bucket containing all the company's transactions",
     "parent": null,
@@ -296,13 +296,32 @@ container_request_json = json.loads("""
       "isPartitioned": true,
       "columns": [
         {
-          "name": "transaction_id",
+          "name": "date",
           "dataType": "NUMERIC",
           "dataTypeDisplay": "numeric",
           "description": "The ID of the executed transaction. This column is the primary key for this table.",
           "tags": [],
           "constraint": "PRIMARY_KEY",
-          "ordinalPosition": 1
+          "ordinalPosition": 1,
+          "children": [
+          { 
+          "name": "country",
+           "dataType": "NUMERIC",
+           "dataTypeDisplay": "numeric",
+            "description": "Nested",
+            "tags": [],
+            "children": [
+              {
+               "name": "state",
+                "dataType": "NUMERIC",
+                "dataTypeDisplay": "numeric",
+            "description": "Nested",
+            "tags": []
+              
+              }
+            ]
+          }
+          ]
         },
         {
           "name": "merchant",
