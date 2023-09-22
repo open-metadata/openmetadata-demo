@@ -80,10 +80,13 @@ from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
 from metadata.generated.schema.type.entityLineage import EntitiesEdge
 from metadata.generated.schema.type import basic, entityReference, schema, tagLabel
 
+from metadata.generated.schema.api.data.createContainer import CreateContainerRequest
+
+
 
 # to connect to OpenMetadata Server
 security_config = OpenMetadataJWTClientConfig(
-    jwtToken="eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJpbmdlc3Rpb24tYm90IiwiaXNCb3QiOnRydWUsImlzcyI6Im9wZW4tbWV0YWRhdGEub3JnIiwiaWF0IjoxNjcxNzMwMTEzLCJlbWFpbCI6ImluZ2VzdGlvbi1ib3RAb3Blbm1ldGFkYXRhLm9yZyJ9.KmoEq1WJHz5LDdmUZ_nmNT0X7lpuBmc4OUL4wnMcNfJOERiIzeSJQQ8AnM5p-ctw5byVHV3KnoTfZfU2DGcWYNsVrpTXuxqnDYM6CkC8fXxoTmk9U9AyAy_0N8zEuDVsUF2Vviw4fcnx_AXl0wYDJknDTv3FeJWxjuJjEBmQmonhvIJ9wm1e2QNx5xDfOPtnmitj7y__b3DPdxuTSdQcrMOciwKnd8kmgEscbsKfaG30iNgCUGWDmRaHuRX4QOhcvQ45WIFpkUFggsKLPCLGWZ_Vb0khv3R8mV0RMZAaIZ6a8fZVpi6Juad_nyhiUlkS4pwXywuFJeUJI4sm70KAew"
+    jwtToken="eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJvcGVuLW1ldGFkYXRhLm9yZyIsInN1YiI6ImluZ2VzdGlvbi1ib3QiLCJlbWFpbCI6ImluZ2VzdGlvbi1ib3RAb3Blbm1ldGFkYXRhLm9yZyIsImlzQm90Ijp0cnVlLCJ0b2tlblR5cGUiOiJCT1QiLCJpYXQiOjE2OTU0MDkwNDEsImV4cCI6bnVsbH0.G2cmKdidr_lQd8nNy7i_7X3mSqXJsX4cFk0PqRoN0vJwsIiDhtTc7fd5Fi6NzT5ZxTR9BS2jRuaTMJ0dbBXwNaUZM_VDupGA_foSqfktjr6Ho-YRnmP_z6095lPJG9wE6hcWu6oXPWTR-zys0j0SkrUBFjSmYk-f31KW9jINFtR55MMwqe7weCsZkoJJ5O9w7vku4l6MeOfXVEfkVWCZaBKi93EYBlk9GBcV5HkVhjq2sujYtYUw9muwzl_4jiEZwFkeV7TkV8OBFowaT0L0SRyvuVq3hs27gdLLZBPrN3kiLN8JaGnVE2_CFOSdcrFiQVncyFHihY9C_3f113H-Ag"
 )
 server_config = OpenMetadataConnection(
     hostPort="http://localhost:8585/api",
@@ -115,7 +118,12 @@ service_entity = metadata.create_or_update(data=create_service)
 # Create a Storage Service
 #
 create_storage_service_entity = CreateStorageServiceRequest(
-    name="S3 Sample", serviceType="S3", description="S3 Object Store"
+    name="S3 Sample", serviceType="S3", description="S3 Object Store", connection={
+        "config": {
+            "type": "S3",
+            "awsConfig": {"awsRegion": "us-west-1"}
+        }
+    }
 )
 storage_service_entity = metadata.create_or_update(data=create_storage_service_entity)
 
@@ -227,17 +235,19 @@ metadata.patch_column_tag(
 
 # Create pipeline
 #
-task = Task(name="ingest", taskUrl="http://localhost:8080/table_etl/ingest")
+task = Task(name="ingest", sourceUrl="http://localhost:8080/table_etl/ingest")
 pipeline_request = CreatePipelineRequest(
     name="table_etl",
     displayName="Table ETL",
     description="Table ETL",
-    pipelineUrl="http://localhost:8080/table_etl",
+    sourceUrl="http://localhost:8080/table_etl",
     tasks=[task],
-    service=EntityReference(id=pipeline_service_entity.id, type="pipelineService"),
+    service=pipeline_service_entity.fullyQualifiedName
 )
 pipeline = metadata.create_or_update(pipeline_request)
 
+
+## Create Topic
 topic_request = CreateTopicRequest(
     name="customer_events",
     description="Kafka topic to capture the customer events such as location updates or profile updates",
@@ -247,13 +257,14 @@ topic_request = CreateTopicRequest(
         schemaType="Avro",
         schemaText='{"namespace":"org.open-metadata.kafka","name":"Customer","type":"record","fields":[{"name":"id","type":"string"},{"name":"first_name","type":"string"},{"name":"last_name","type":"string"},{"name":"email","type":"string"},{"name":"address_line_1","type":"string"},{"name":"address_line_2","type":"string"},{"name":"post_code","type":"string"},{"name":"country","type":"string"}]}',
     ),
-    service=EntityReference(id=messaging_service_entity.id, type="messagingService"),
+    service=messaging_service_entity.fullyQualifiedName,
 )
 topic = metadata.create_or_update(topic_request)
 
 
+## Create Lineage between table and pipeline as edge
+
 add_lineage_request = AddLineageRequest(
-    description="test lineage",
     edge=EntitiesEdge(
         fromEntity=EntityReference(id=table_a_entity.id, type="table"),
         toEntity=EntityReference(id=pipeline.id, type="pipeline"),
@@ -263,7 +274,6 @@ add_lineage_request = AddLineageRequest(
 created_lineage = metadata.add_lineage(data=add_lineage_request)
 
 add_lineage_request = AddLineageRequest(
-    description="test lineage",
     edge=EntitiesEdge(
         fromEntity=EntityReference(id=pipeline.id, type="pipeline"),
         toEntity=EntityReference(id=table_b_entity.id, type="table"),
@@ -272,9 +282,81 @@ add_lineage_request = AddLineageRequest(
 
 created_lineage = metadata.add_lineage(data=add_lineage_request)
 
+
+
+## Create Storage Containers
+container_request_json = json.loads("""
+  {
+    "name": "transactions",
+    "displayName": "Company Transactions",
+    "description": "Bucket containing all the company's transactions",
+    "parent": null,
+    "prefix": "/transactions/",
+    "dataModel": {
+      "isPartitioned": true,
+      "columns": [
+        {
+          "name": "transaction_id",
+          "dataType": "NUMERIC",
+          "dataTypeDisplay": "numeric",
+          "description": "The ID of the executed transaction. This column is the primary key for this table.",
+          "tags": [],
+          "constraint": "PRIMARY_KEY",
+          "ordinalPosition": 1
+        },
+        {
+          "name": "merchant",
+          "dataType": "VARCHAR",
+          "dataLength": 100,
+          "dataTypeDisplay": "varchar",
+          "description": "The merchant for this transaction.",
+          "tags": [],
+          "ordinalPosition": 2
+        },
+        {
+          "name": "transaction_time",
+          "dataType": "TIMESTAMP",
+          "dataTypeDisplay": "timestamp",
+          "description": "The time the transaction took place.",
+          "tags": [],
+          "ordinalPosition": 3
+        }
+      ]
+    },
+    "numberOfObjects": "50",
+    "size": "102400",
+    "fileFormats": [
+      "parquet"
+    ]
+  }
+""")
+container_request_json['service'] = storage_service_entity.fullyQualifiedName
+container_request = CreateContainerRequest(**container_request_json)
+container_entity = metadata.create_or_update(container_request)
+
+child_container_request_json = json.loads("""
+{
+    "name": "departments",
+    "displayName": "Company departments",
+    "description": "Bucket containing company department information",
+    "prefix": "/departments/",
+    "dataModel": null,
+    "numberOfObjects": "2",
+    "size": "2048",
+    "fileFormats": [
+      "csv"
+    ]
+  }
+""")
+child_container_request_json['parent'] = EntityReference(id=container_entity.id, type='container')
+child_container_request_json['service'] = storage_service_entity.fullyQualifiedName
+child_container_request = CreateContainerRequest(**child_container_request_json)
+child_container_entity = metadata.create_or_update(child_container_request)
+
 ## Fetching Users
 
 from metadata.generated.schema.entity.teams.user import User
 
 # The name is whatever comes before the @ in their email. For example, admin@openmetadata.org you can fetch via:
 user = metadata.get_by_name(entity=User, fqn="admin")
+
