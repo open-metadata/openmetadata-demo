@@ -11,13 +11,14 @@
 """
 Custom Database Service Source example
 """
-from typing import Iterable, List
+from typing import Iterable
 
 from metadata.ingestion.api.common import Entity
-from metadata.ingestion.api.source import Source, SourceStatus
+from metadata.ingestion.api.steps import Source
 from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
     OpenMetadataConnection,
 )
+from metadata.ingestion.api.models import Either
 from metadata.generated.schema.api.data.createDatabase import CreateDatabaseRequest
 from metadata.generated.schema.entity.services.databaseService import (
     DatabaseService,
@@ -25,23 +26,10 @@ from metadata.generated.schema.entity.services.databaseService import (
 from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
 )
-from metadata.generated.schema.type.entityReference import EntityReference
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.utils.logger import ingestion_logger
 
 logger = ingestion_logger()
-
-
-class MyAwesomeConnectorStatus(SourceStatus):
-    """
-    Custom status. We'll track success and failures.
-    """
-
-    success: List[str] = []
-
-    def scanned(self, record: str) -> None:
-        self.success.append(record)
-        logger.info(f"Scanned [{record}]")
 
 
 class MyAwesomeConnector(Source):
@@ -49,12 +37,11 @@ class MyAwesomeConnector(Source):
     Custom connector to ingest Database metadata
     """
 
-    def __init__(self, config: WorkflowSource, metadata_config: OpenMetadataConnection):
+    def __init__(self, config: WorkflowSource, metadata: OpenMetadata):
         self.config = config
-        self.metadata_config = metadata_config
+        self.metadata = metadata
 
-        self.metadata = OpenMetadata(self.metadata_config)
-        self.status = MyAwesomeConnectorStatus()
+        super().__init__()
 
     @classmethod
     def create(
@@ -67,24 +54,25 @@ class MyAwesomeConnector(Source):
         pass
 
     def yield_create_request_database_service(self, config: WorkflowSource):
-        yield self.metadata.get_create_service_from_source(
-            entity=DatabaseService, config=config
+        yield Either(
+            right=self.metadata.get_create_service_from_source(
+                entity=DatabaseService, config=config
+            )
         )
 
-    def next_record(self) -> Iterable[Entity]:
+    def _iter(self) -> Iterable[Either[Entity]]:
         yield from self.yield_create_request_database_service(self.config)
 
         service_entity: DatabaseService = self.metadata.get_by_name(
             entity=DatabaseService, fqn=self.config.serviceName
         )
 
-        yield CreateDatabaseRequest(
-            name="awesome-database",
-            service=service_entity.fullyQualifiedName,
+        yield Either(
+            right=CreateDatabaseRequest(
+                name="awesome-database",
+                service=service_entity.fullyQualifiedName,
+            )
         )
-
-    def get_status(self) -> SourceStatus:
-        return self.status
 
     def test_connection(self) -> None:
         pass

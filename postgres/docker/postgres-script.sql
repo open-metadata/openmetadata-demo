@@ -317,8 +317,5 @@ INSERT INTO public.film_actor VALUES (10, 929, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 930, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 964, '2022-02-15 10:05:03+00');
 
--- Run queries to have usage data available
-select * from actor_catalog;
-select max(name) as super_KPI from actor_catalog;
-
 COMMIT;
+

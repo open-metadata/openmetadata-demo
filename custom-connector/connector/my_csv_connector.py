@@ -12,12 +12,15 @@
 Custom Database Service Extracting metadata from a CSV file
 """
 import csv
+import traceback
+
 from pydantic import BaseModel, ValidationError, validator
 from pathlib import Path
 from typing import Iterable, Optional, List, Dict, Any
 
 from metadata.ingestion.api.common import Entity
-from metadata.ingestion.api.source import Source, SourceStatus, InvalidSourceException
+from metadata.ingestion.api.models import Either, StackTraceError
+from metadata.ingestion.api.steps import Source, InvalidSourceException
 from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
     OpenMetadataConnection,
 )
@@ -39,7 +42,6 @@ from metadata.generated.schema.entity.data.table import (
 from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
 )
-from metadata.generated.schema.type.entityReference import EntityReference
 from metadata.generated.schema.api.data.createTable import CreateTableRequest
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.utils.logger import ingestion_logger
@@ -74,13 +76,11 @@ class CsvConnector(Source):
     with a custom database name from a business_unit connection option.
     """
 
-    def __init__(self, config: WorkflowSource, metadata_config: OpenMetadataConnection):
+    def __init__(self, config: WorkflowSource, metadata: OpenMetadata):
         self.config = config
-        self.service_connection = config.serviceConnection.__root__.config
-        self.metadata_config = metadata_config
+        self.metadata = metadata
 
-        self.metadata = OpenMetadata(self.metadata_config)
-        self.status = SourceStatus()
+        self.service_connection = config.serviceConnection.__root__.config
 
         self.source_directory: str = (
             self.service_connection.connectionOptions.__root__.get("source_directory")
@@ -99,6 +99,8 @@ class CsvConnector(Source):
             )
 
         self.data: Optional[List[CsvModel]] = None
+
+        super().__init__()
 
     @classmethod
     def create(
@@ -134,8 +136,10 @@ class CsvConnector(Source):
             raise exc
 
     def yield_create_request_database_service(self):
-        yield self.metadata.get_create_service_from_source(
-            entity=DatabaseService, config=self.config
+        yield Either(
+            right=self.metadata.get_create_service_from_source(
+                entity=DatabaseService, config=self.config
+            )
         )
 
     def yield_business_unit_db(self):
@@ -144,9 +148,11 @@ class CsvConnector(Source):
             entity=DatabaseService, fqn=self.config.serviceName
         )
 
-        yield CreateDatabaseRequest(
-            name=self.business_unit,
-            service=service_entity.fullyQualifiedName,
+        yield Either(
+            right=CreateDatabaseRequest(
+                name=self.business_unit,
+                service=service_entity.fullyQualifiedName,
+            )
         )
 
     def yield_default_schema(self):
@@ -155,9 +161,11 @@ class CsvConnector(Source):
             entity=Database, fqn=f"{self.config.serviceName}.{self.business_unit}"
         )
 
-        yield CreateDatabaseSchemaRequest(
-            name="default",
-            database=database_entity.fullyQualifiedName,
+        yield Either(
+            right=CreateDatabaseSchemaRequest(
+                name="default",
+                database=database_entity.fullyQualifiedName,
+            )
         )
 
     def yield_data(self):
@@ -169,27 +177,38 @@ class CsvConnector(Source):
             fqn=f"{self.config.serviceName}.{self.business_unit}.default",
         )
 
-        for row in self.data:
-            yield CreateTableRequest(
-                name=row.name,
-                databaseSchema=database_schema.fullyQualifiedName,
-                columns=[
-                    Column(
-                        name=model_col[0],
-                        dataType=model_col[1],
-                    )
-                    for model_col in zip(row.column_names, row.column_types)
-                ],
+        # Let's suppose we had a failure we want to track
+        try:
+            1 / 0
+        except Exception:
+            yield Either(
+                left=StackTraceError(
+                    name="My Error",
+                    error="Demoing one error",
+                    stack_trace=traceback.format_exc(),
+                )
             )
 
-    def next_record(self) -> Iterable[Entity]:
+        for row in self.data:
+            yield Either(
+                right=CreateTableRequest(
+                    name=row.name,
+                    databaseSchema=database_schema.fullyQualifiedName,
+                    columns=[
+                        Column(
+                            name=model_col[0],
+                            dataType=model_col[1],
+                        )
+                        for model_col in zip(row.column_names, row.column_types)
+                    ],
+                )
+            )
+
+    def _iter(self) -> Iterable[Entity]:
         yield from self.yield_create_request_database_service()
         yield from self.yield_business_unit_db()
         yield from self.yield_default_schema()
         yield from self.yield_data()
-
-    def get_status(self) -> SourceStatus:
-        return self.status
 
     def test_connection(self) -> None:
         pass
