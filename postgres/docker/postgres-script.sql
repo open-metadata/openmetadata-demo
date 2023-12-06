@@ -35,6 +35,10 @@ CREATE TABLE public.film_actor (
    last_update timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE VIEW public.actor_view AS
+  SELECT actor_id, first_name, last_name, last_update
+  FROM public.actor;
+
 ALTER TABLE public.film_actor OWNER TO openmetadata_user;
 
 ALTER TABLE ONLY public.actor
