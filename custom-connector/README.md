@@ -114,3 +114,12 @@ To run the CSV Custom Connector, the Python class will be `connector.my_csv_conn
 to set the following Connection Options:
 - `source_directory`: `/opt/airflow/ingestion/sample.csv`
 - `business_unit`: Any name you'd like (preferably no special characters).
+
+
+## Protobuf Custom Connector
+
+To run the Protobuf Custom Connector, the Python class will be `connector.my_protobuf_connector.ProtobufConnector` and we'll need
+to set the following Connection Options:
+- `source_directory`: `/opt/airflow/ingestion/sample.proto`
+- `business_unit`: Any name you'd like (preferably no special characters).
+- `schema_name`: The name of schema model in proto file.
