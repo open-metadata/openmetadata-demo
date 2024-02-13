@@ -360,3 +360,30 @@ from metadata.generated.schema.entity.teams.user import User
 # The name is whatever comes before the @ in their email. For example, admin@openmetadata.org you can fetch via:
 user = metadata.get_by_name(entity=User, fqn="admin")
 
+## List ALL Tables
+from metadata.generated.schema.entity.data.table import Table
+
+all_entities = metadata.list_all_entities(
+    entity=Table, fields=["tags"]
+)
+
+for table in all_entities:
+    # Do something
+    ...
+
+## List ALL Glossaries and its terms
+from metadata.generated.schema.entity.data.glossary import Glossary
+from metadata.generated.schema.entity.data.glossaryTerm import GlossaryTerm
+
+all_glossaries = metadata.list_all_entities(
+    entity=Glossary, fields=["tags"]
+)
+for glossary in all_glossaries:
+    print(f"Glossary {glossary.name.__root__}")
+    children = metadata.list_all_entities(
+        entity=GlossaryTerm,
+        params={"glossary": str(glossary.id.__root__)},
+        fields=["children", "owner", "parent"],
+    )
+    for child in children:
+        print(f"Term {child.fullyQualifiedName.__root__}")
