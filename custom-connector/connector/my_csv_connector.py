@@ -19,7 +19,8 @@ from pathlib import Path
 from typing import Iterable, Optional, List, Dict, Any
 
 from metadata.ingestion.api.common import Entity
-from metadata.ingestion.api.models import Either, StackTraceError
+from metadata.ingestion.api.models import Either
+from metadata.generated.schema.entity.services.ingestionPipelines.status import StackTraceError
 from metadata.ingestion.api.steps import Source, InvalidSourceException
 from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
     OpenMetadataConnection,
@@ -185,7 +186,7 @@ class CsvConnector(Source):
                 left=StackTraceError(
                     name="My Error",
                     error="Demoing one error",
-                    stack_trace=traceback.format_exc(),
+                    stackTrace=traceback.format_exc(),
                 )
             )
 

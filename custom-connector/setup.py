@@ -11,7 +11,7 @@
 
 from setuptools import setup, find_packages
 
-base_requirements = {"openmetadata-ingestion~=1.2.0"}
+base_requirements = {"openmetadata-ingestion==1.3.0"}
 
 setup(
     name="custom-connector",

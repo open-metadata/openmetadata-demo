@@ -34,7 +34,8 @@ from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
 )
 from metadata.ingestion.api.common import Entity
-from metadata.ingestion.api.models import Either, StackTraceError
+from metadata.ingestion.api.models import Either
+from metadata.generated.schema.entity.services.ingestionPipelines.status import StackTraceError
 from metadata.ingestion.api.steps import Source
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.parsers.protobuf_parser import ProtobufParser, ProtobufParserConfig
