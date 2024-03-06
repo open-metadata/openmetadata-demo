@@ -1,3 +1,5 @@
+CREATE DATABASE metabaseappdb;
+
 CREATE USER openmetadata_user WITH PASSWORD 'password';
 GRANT ALL PRIVILEGES ON DATABASE postgres TO openmetadata_user;
 
