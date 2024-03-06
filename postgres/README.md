@@ -10,8 +10,8 @@ The goal of the demo is to extract different metadata from a Postgres database:
 - Lineage from queries
 - Profiling & Tests
 
-**OBS**: Note that this demo is based on OpenMetadata version 1.0.3. If playing locally with the `openmetadata-ingestion`
-package, make sure to install `openmetadata-ingestion~=1.0.3`
+**OBS**: Note that this demo is based on OpenMetadata version 1.3.1. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion~=1.3.1`
 
 ## Requirements
 
@@ -190,10 +190,10 @@ Let's dive a bit deeper and interact directly with the OpenMetadata API to creat
 and better lineage!
 
 This section will be run on a jupyter notebook on our laptops. Let's prepare the environment
-with (requires Python >= 3.7):
+with (requires Python >= 3.8):
 
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install jupyter notebook openmetadata-ingestion~=1.0.3
+pip install jupyter notebook openmetadata-ingestion~=1.3.1
 ```

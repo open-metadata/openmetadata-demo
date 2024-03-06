@@ -19,7 +19,7 @@ volumes:
 services:
   mysql:
     container_name: openmetadata_mysql
-    image: docker.getcollate.io/openmetadata/db:1.2.2
+    image: docker.getcollate.io/openmetadata/db:1.3.1
     command: "--sort_buffer_size=10M"
     restart: always
     environment:
@@ -29,7 +29,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-     - db-data:/var/lib/mysql
+      - ./docker-volume/db-data:/var/lib/mysql
     networks:
       - app_net
     healthcheck:
@@ -50,20 +50,25 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    healthcheck:
+      test: "curl -s http://localhost:9200/_cluster/health?pretty | grep status | grep -qE 'green|yellow' || exit 1"
+      interval: 15s
+      timeout: 10s
+      retries: 10
     volumes:
       - es-data:/usr/share/elasticsearch/data
 
   execute-migrate-all:
     container_name: execute_migrate_all
-    image: docker.getcollate.io/openmetadata/server:1.2.2
-    command: "./bootstrap/bootstrap_storage.sh migrate-all"
+    image: docker.getcollate.io/openmetadata/server:1.3.1
+    command: "./bootstrap/openmetadata-ops.sh migrate"
     environment:
       OPENMETADATA_CLUSTER_NAME: ${OPENMETADATA_CLUSTER_NAME:-openmetadata}
       SERVER_PORT: ${SERVER_PORT:-8585}
       SERVER_ADMIN_PORT: ${SERVER_ADMIN_PORT:-8586}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      
-      # Migration 
+
+      # Migration
       MIGRATION_LIMIT_PARAM: ${MIGRATION_LIMIT_PARAM:-1200}
 
       # OpenMetadata Server Authentication Configuration
@@ -76,6 +81,7 @@ services:
       AUTHORIZER_ENFORCE_PRINCIPAL_DOMAIN: ${AUTHORIZER_ENFORCE_PRINCIPAL_DOMAIN:-false}
       AUTHORIZER_ENABLE_SECURE_SOCKET: ${AUTHORIZER_ENABLE_SECURE_SOCKET:-false}
       AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-basic}
+      AUTHENTICATION_RESPONSE_TYPE: ${AUTHENTICATION_RESPONSE_TYPE:-id_token}
       CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME: ${CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME:-""}
       AUTHENTICATION_PUBLIC_KEYS: ${AUTHENTICATION_PUBLIC_KEYS:-[http://localhost:8585/api/v1/system/config/jwks]}
       AUTHENTICATION_AUTHORITY: ${AUTHENTICATION_AUTHORITY:-https://accounts.google.com}
@@ -83,6 +89,48 @@ services:
       AUTHENTICATION_CALLBACK_URL: ${AUTHENTICATION_CALLBACK_URL:-""}
       AUTHENTICATION_JWT_PRINCIPAL_CLAIMS: ${AUTHENTICATION_JWT_PRINCIPAL_CLAIMS:-[email,preferred_username,sub]}
       AUTHENTICATION_ENABLE_SELF_SIGNUP: ${AUTHENTICATION_ENABLE_SELF_SIGNUP:-true}
+      # For SAML Authentication
+      # SAML_DEBUG_MODE: ${SAML_DEBUG_MODE:-false}
+      # SAML_IDP_ENTITY_ID: ${SAML_IDP_ENTITY_ID:-""}
+      # SAML_IDP_SSO_LOGIN_URL: ${SAML_IDP_SSO_LOGIN_URL:-""}
+      # SAML_IDP_CERTIFICATE: ${SAML_IDP_CERTIFICATE:-""}
+      # SAML_AUTHORITY_URL: ${SAML_AUTHORITY_URL:-"http://localhost:8585/api/v1/saml/login"}
+      # SAML_IDP_NAME_ID: ${SAML_IDP_NAME_ID:-"urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress"}
+      # SAML_SP_ENTITY_ID: ${SAML_SP_ENTITY_ID:-"http://localhost:8585/api/v1/saml/metadata"}
+      # SAML_SP_ACS: ${SAML_SP_ACS:-"http://localhost:8585/api/v1/saml/acs"}
+      # SAML_SP_CERTIFICATE: ${SAML_SP_CERTIFICATE:-""}
+      # SAML_SP_CALLBACK: ${SAML_SP_CALLBACK:-"http://localhost:8585/saml/callback"}
+      # SAML_STRICT_MODE: ${SAML_STRICT_MODE:-false}
+      # SAML_SP_TOKEN_VALIDITY: ${SAML_SP_TOKEN_VALIDITY:-"3600"}
+      # SAML_SEND_ENCRYPTED_NAME_ID: ${SAML_SEND_ENCRYPTED_NAME_ID:-false}
+      # SAML_SEND_SIGNED_AUTH_REQUEST: ${SAML_SEND_SIGNED_AUTH_REQUEST:-false}
+      # SAML_SIGNED_SP_METADATA: ${SAML_SIGNED_SP_METADATA:-false}
+      # SAML_WANT_MESSAGE_SIGNED: ${SAML_WANT_MESSAGE_SIGNED:-false}
+      # SAML_WANT_ASSERTION_SIGNED: ${SAML_WANT_ASSERTION_SIGNED:-false}
+      # SAML_WANT_ASSERTION_ENCRYPTED: ${SAML_WANT_ASSERTION_ENCRYPTED:-false}
+      # SAML_WANT_NAME_ID_ENCRYPTED: ${SAML_WANT_NAME_ID_ENCRYPTED:-false}
+      # SAML_KEYSTORE_FILE_PATH: ${SAML_KEYSTORE_FILE_PATH:-""}
+      # SAML_KEYSTORE_ALIAS: ${SAML_KEYSTORE_ALIAS:-""}
+      # SAML_KEYSTORE_PASSWORD: ${SAML_KEYSTORE_PASSWORD:-""}
+      # For LDAP Authentication
+      # AUTHENTICATION_LDAP_HOST: ${AUTHENTICATION_LDAP_HOST:-}
+      # AUTHENTICATION_LDAP_PORT: ${AUTHENTICATION_LDAP_PORT:-}
+      # AUTHENTICATION_LOOKUP_ADMIN_DN: ${AUTHENTICATION_LOOKUP_ADMIN_DN:-""}
+      # AUTHENTICATION_LOOKUP_ADMIN_PWD: ${AUTHENTICATION_LOOKUP_ADMIN_PWD:-""}
+      # AUTHENTICATION_USER_LOOKUP_BASEDN: ${AUTHENTICATION_USER_LOOKUP_BASEDN:-""}
+      # AUTHENTICATION_USER_MAIL_ATTR: ${AUTHENTICATION_USER_MAIL_ATTR:-}
+      # AUTHENTICATION_LDAP_POOL_SIZE: ${AUTHENTICATION_LDAP_POOL_SIZE:-3}
+      # AUTHENTICATION_LDAP_SSL_ENABLED: ${AUTHENTICATION_LDAP_SSL_ENABLED:-}
+      # AUTHENTICATION_LDAP_TRUSTSTORE_TYPE: ${AUTHENTICATION_LDAP_TRUSTSTORE_TYPE:-TrustAll}
+      # AUTHENTICATION_LDAP_TRUSTSTORE_PATH: ${AUTHENTICATION_LDAP_TRUSTSTORE_PATH:-}
+      # AUTHENTICATION_LDAP_KEYSTORE_PASSWORD: ${AUTHENTICATION_LDAP_KEYSTORE_PASSWORD:-}
+      # AUTHENTICATION_LDAP_SSL_KEY_FORMAT: ${AUTHENTICATION_LDAP_SSL_KEY_FORMAT:-}
+      # AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST: ${AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST:-}
+      # AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES: ${AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES:-}
+      # AUTHENTICATION_LDAP_ALLOW_WILDCARDS: ${AUTHENTICATION_LDAP_ALLOW_WILDCARDS:-}
+      # AUTHENTICATION_LDAP_ALLOWED_HOSTNAMES: ${AUTHENTICATION_LDAP_ALLOWED_HOSTNAMES:-[]}
+      # AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST: ${AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST:-}
+      # AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES: ${AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES:-true}
 
       # JWT Configuration
       RSA_PUBLIC_KEY_FILE_PATH: ${RSA_PUBLIC_KEY_FILE_PATH:-"./conf/public_key.der"}
@@ -140,16 +188,21 @@ services:
       FERNET_KEY: ${FERNET_KEY:-jJ/9sz0g0OHxsfxOoSfdFdmk3ysNmPRnH3TUAbz3IHA=}
 
       #secretsManagerConfiguration
-      SECRET_MANAGER: ${SECRET_MANAGER:-noop}
-      #parameters:
+      SECRET_MANAGER: ${SECRET_MANAGER:-db}
+      # AWS:
       OM_SM_REGION: ${OM_SM_REGION:-""}
       OM_SM_ACCESS_KEY_ID: ${OM_SM_ACCESS_KEY_ID:-""}
       OM_SM_ACCESS_KEY: ${OM_SM_ACCESS_KEY:-""}
+      # Azure:
+      OM_SM_VAULT_NAME: ${OM_SM_VAULT_NAME:-""}
+      OM_SM_CLIENT_ID: ${OM_SM_CLIENT_ID:-""}
+      OM_SM_CLIENT_SECRET: ${OM_SM_CLIENT_SECRET:-""}
+      OM_SM_TENANT_ID: ${OM_SM_TENANT_ID:-""}
 
       #email configuration:
       OM_EMAIL_ENTITY: ${OM_EMAIL_ENTITY:-"OpenMetadata"}
       OM_SUPPORT_URL: ${OM_SUPPORT_URL:-"https://slack.open-metadata.org"}
-      AUTHORIZER_ENABLE_SMTP : ${AUTHORIZER_ENABLE_SMTP:-false}
+      AUTHORIZER_ENABLE_SMTP: ${AUTHORIZER_ENABLE_SMTP:-false}
       OPENMETADATA_SERVER_URL: ${OPENMETADATA_SERVER_URL:-""}
       OPENMETADATA_SMTP_SENDER_MAIL: ${OPENMETADATA_SMTP_SENDER_MAIL:-""}
       SMTP_SERVER_ENDPOINT: ${SMTP_SERVER_ENDPOINT:-""}
@@ -157,9 +210,6 @@ services:
       SMTP_SERVER_USERNAME: ${SMTP_SERVER_USERNAME:-""}
       SMTP_SERVER_PWD: ${SMTP_SERVER_PWD:-""}
       SMTP_SERVER_STRATEGY: ${SMTP_SERVER_STRATEGY:-"SMTP_TLS"}
-
-      #changeEventConfig
-      OM_URI: ${OM_URI:- "http://localhost:8585"}
 
       # Heap OPTS Configurations
       OPENMETADATA_HEAP_OPTS: ${OPENMETADATA_HEAP_OPTS:--Xmx1G -Xms1G}
@@ -179,11 +229,11 @@ services:
       WEB_CONF_FRAME_ORIGIN: ${WEB_CONF_FRAME_ORIGIN:-""}
       #Content Type
       WEB_CONF_CONTENT_TYPE_OPTIONS_ENABLED: ${WEB_CONF_CONTENT_TYPE_OPTIONS_ENABLED:-false}
-      #XSS-Protection  
+      #XSS-Protection
       WEB_CONF_XSS_PROTECTION_ENABLED: ${WEB_CONF_XSS_PROTECTION_ENABLED:-false}
       WEB_CONF_XSS_PROTECTION_ON: ${WEB_CONF_XSS_PROTECTION_ON:-true}
       WEB_CONF_XSS_PROTECTION_BLOCK: ${WEB_CONF_XSS_PROTECTION_BLOCK:-true}
-      #CSP    
+      #CSP
       WEB_CONF_XSS_CSP_ENABLED: ${WEB_CONF_XSS_CSP_ENABLED:-false}
       WEB_CONF_XSS_CSP_POLICY: ${WEB_CONF_XSS_CSP_POLICY:-"default-src 'self'"}
       WEB_CONF_XSS_CSP_REPORT_ONLY_POLICY: ${WEB_CONF_XSS_CSP_REPORT_ONLY_POLICY:-""}
@@ -195,7 +245,7 @@ services:
       WEB_CONF_PERMISSION_POLICY_OPTION: ${WEB_CONF_PERMISSION_POLICY_OPTION:-""}
     depends_on:
       elasticsearch:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
     networks:
@@ -204,7 +254,7 @@ services:
   openmetadata-server:
     container_name: openmetadata_server
     restart: always
-    image: docker.getcollate.io/openmetadata/server:1.2.2
+    image: docker.getcollate.io/openmetadata/server:1.3.1
     environment:
       OPENMETADATA_CLUSTER_NAME: ${OPENMETADATA_CLUSTER_NAME:-openmetadata}
       SERVER_PORT: ${SERVER_PORT:-8585}
@@ -221,6 +271,7 @@ services:
       AUTHORIZER_ENFORCE_PRINCIPAL_DOMAIN: ${AUTHORIZER_ENFORCE_PRINCIPAL_DOMAIN:-false}
       AUTHORIZER_ENABLE_SECURE_SOCKET: ${AUTHORIZER_ENABLE_SECURE_SOCKET:-false}
       AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-basic}
+      AUTHENTICATION_RESPONSE_TYPE: ${AUTHENTICATION_RESPONSE_TYPE:-id_token}
       CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME: ${CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME:-""}
       AUTHENTICATION_PUBLIC_KEYS: ${AUTHENTICATION_PUBLIC_KEYS:-[http://localhost:8585/api/v1/system/config/jwks]}
       AUTHENTICATION_AUTHORITY: ${AUTHENTICATION_AUTHORITY:-https://accounts.google.com}
@@ -228,6 +279,48 @@ services:
       AUTHENTICATION_CALLBACK_URL: ${AUTHENTICATION_CALLBACK_URL:-""}
       AUTHENTICATION_JWT_PRINCIPAL_CLAIMS: ${AUTHENTICATION_JWT_PRINCIPAL_CLAIMS:-[email,preferred_username,sub]}
       AUTHENTICATION_ENABLE_SELF_SIGNUP: ${AUTHENTICATION_ENABLE_SELF_SIGNUP:-true}
+      # For SAML Authentication
+      # SAML_DEBUG_MODE: ${SAML_DEBUG_MODE:-false}
+      # SAML_IDP_ENTITY_ID: ${SAML_IDP_ENTITY_ID:-""}
+      # SAML_IDP_SSO_LOGIN_URL: ${SAML_IDP_SSO_LOGIN_URL:-""}
+      # SAML_IDP_CERTIFICATE: ${SAML_IDP_CERTIFICATE:-""}
+      # SAML_AUTHORITY_URL: ${SAML_AUTHORITY_URL:-"http://localhost:8585/api/v1/saml/login"}
+      # SAML_IDP_NAME_ID: ${SAML_IDP_NAME_ID:-"urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress"}
+      # SAML_SP_ENTITY_ID: ${SAML_SP_ENTITY_ID:-"http://localhost:8585/api/v1/saml/metadata"}
+      # SAML_SP_ACS: ${SAML_SP_ACS:-"http://localhost:8585/api/v1/saml/acs"}
+      # SAML_SP_CERTIFICATE: ${SAML_SP_CERTIFICATE:-""}
+      # SAML_SP_CALLBACK: ${SAML_SP_CALLBACK:-"http://localhost:8585/saml/callback"}
+      # SAML_STRICT_MODE: ${SAML_STRICT_MODE:-false}
+      # SAML_SP_TOKEN_VALIDITY: ${SAML_SP_TOKEN_VALIDITY:-"3600"}
+      # SAML_SEND_ENCRYPTED_NAME_ID: ${SAML_SEND_ENCRYPTED_NAME_ID:-false}
+      # SAML_SEND_SIGNED_AUTH_REQUEST: ${SAML_SEND_SIGNED_AUTH_REQUEST:-false}
+      # SAML_SIGNED_SP_METADATA: ${SAML_SIGNED_SP_METADATA:-false}
+      # SAML_WANT_MESSAGE_SIGNED: ${SAML_WANT_MESSAGE_SIGNED:-false}
+      # SAML_WANT_ASSERTION_SIGNED: ${SAML_WANT_ASSERTION_SIGNED:-false}
+      # SAML_WANT_ASSERTION_ENCRYPTED: ${SAML_WANT_ASSERTION_ENCRYPTED:-false}
+      # SAML_WANT_NAME_ID_ENCRYPTED: ${SAML_WANT_NAME_ID_ENCRYPTED:-false}
+      # SAML_KEYSTORE_FILE_PATH: ${SAML_KEYSTORE_FILE_PATH:-""}
+      # SAML_KEYSTORE_ALIAS: ${SAML_KEYSTORE_ALIAS:-""}
+      # SAML_KEYSTORE_PASSWORD: ${SAML_KEYSTORE_PASSWORD:-""}
+      # For LDAP Authentication
+      # AUTHENTICATION_LDAP_HOST: ${AUTHENTICATION_LDAP_HOST:-}
+      # AUTHENTICATION_LDAP_PORT: ${AUTHENTICATION_LDAP_PORT:-}
+      # AUTHENTICATION_LOOKUP_ADMIN_DN: ${AUTHENTICATION_LOOKUP_ADMIN_DN:-""}
+      # AUTHENTICATION_LOOKUP_ADMIN_PWD: ${AUTHENTICATION_LOOKUP_ADMIN_PWD:-""}
+      # AUTHENTICATION_USER_LOOKUP_BASEDN: ${AUTHENTICATION_USER_LOOKUP_BASEDN:-""}
+      # AUTHENTICATION_USER_MAIL_ATTR: ${AUTHENTICATION_USER_MAIL_ATTR:-}
+      # AUTHENTICATION_LDAP_POOL_SIZE: ${AUTHENTICATION_LDAP_POOL_SIZE:-3}
+      # AUTHENTICATION_LDAP_SSL_ENABLED: ${AUTHENTICATION_LDAP_SSL_ENABLED:-}
+      # AUTHENTICATION_LDAP_TRUSTSTORE_TYPE: ${AUTHENTICATION_LDAP_TRUSTSTORE_TYPE:-TrustAll}
+      # AUTHENTICATION_LDAP_TRUSTSTORE_PATH: ${AUTHENTICATION_LDAP_TRUSTSTORE_PATH:-}
+      # AUTHENTICATION_LDAP_KEYSTORE_PASSWORD: ${AUTHENTICATION_LDAP_KEYSTORE_PASSWORD:-}
+      # AUTHENTICATION_LDAP_SSL_KEY_FORMAT: ${AUTHENTICATION_LDAP_SSL_KEY_FORMAT:-}
+      # AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST: ${AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST:-}
+      # AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES: ${AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES:-}
+      # AUTHENTICATION_LDAP_ALLOW_WILDCARDS: ${AUTHENTICATION_LDAP_ALLOW_WILDCARDS:-}
+      # AUTHENTICATION_LDAP_ALLOWED_HOSTNAMES: ${AUTHENTICATION_LDAP_ALLOWED_HOSTNAMES:-[]}
+      # AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST: ${AUTHENTICATION_LDAP_SSL_VERIFY_CERT_HOST:-}
+      # AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES: ${AUTHENTICATION_LDAP_EXAMINE_VALIDITY_DATES:-true}
 
       # JWT Configuration
       RSA_PUBLIC_KEY_FILE_PATH: ${RSA_PUBLIC_KEY_FILE_PATH:-"./conf/public_key.der"}
@@ -285,16 +378,16 @@ services:
       FERNET_KEY: ${FERNET_KEY:-jJ/9sz0g0OHxsfxOoSfdFdmk3ysNmPRnH3TUAbz3IHA=}
 
       #secretsManagerConfiguration
-      SECRET_MANAGER: ${SECRET_MANAGER:-noop}
+      SECRET_MANAGER: ${SECRET_MANAGER:-db}
       #parameters:
       OM_SM_REGION: ${OM_SM_REGION:-""}
       OM_SM_ACCESS_KEY_ID: ${OM_SM_ACCESS_KEY_ID:-""}
       OM_SM_ACCESS_KEY: ${OM_SM_ACCESS_KEY:-""}
-      
+
       #email configuration:
       OM_EMAIL_ENTITY: ${OM_EMAIL_ENTITY:-"OpenMetadata"}
       OM_SUPPORT_URL: ${OM_SUPPORT_URL:-"https://slack.open-metadata.org"}
-      AUTHORIZER_ENABLE_SMTP : ${AUTHORIZER_ENABLE_SMTP:-false}
+      AUTHORIZER_ENABLE_SMTP: ${AUTHORIZER_ENABLE_SMTP:-false}
       OPENMETADATA_SERVER_URL: ${OPENMETADATA_SERVER_URL:-""}
       OPENMETADATA_SMTP_SENDER_MAIL: ${OPENMETADATA_SMTP_SENDER_MAIL:-""}
       SMTP_SERVER_ENDPOINT: ${SMTP_SERVER_ENDPOINT:-""}
@@ -303,14 +396,11 @@ services:
       SMTP_SERVER_PWD: ${SMTP_SERVER_PWD:-""}
       SMTP_SERVER_STRATEGY: ${SMTP_SERVER_STRATEGY:-"SMTP_TLS"}
 
-      #changeEventConfig
-      OM_URI: ${OM_URI:- "http://localhost:8585"}
-
       # Heap OPTS Configurations
       OPENMETADATA_HEAP_OPTS: ${OPENMETADATA_HEAP_OPTS:--Xmx1G -Xms1G}
       # Mask passwords values in UI
       MASK_PASSWORDS_API: ${MASK_PASSWORDS_API:-false}
-      
+
       #OpenMetadata Web Configuration
       WEB_CONF_URI_PATH: ${WEB_CONF_URI_PATH:-"/api"}
       #HSTS
@@ -324,15 +414,15 @@ services:
       WEB_CONF_FRAME_ORIGIN: ${WEB_CONF_FRAME_ORIGIN:-""}
       #Content Type
       WEB_CONF_CONTENT_TYPE_OPTIONS_ENABLED: ${WEB_CONF_CONTENT_TYPE_OPTIONS_ENABLED:-false}
-      #XSS-Protection  
+      #XSS-Protection
       WEB_CONF_XSS_PROTECTION_ENABLED: ${WEB_CONF_XSS_PROTECTION_ENABLED:-false}
       WEB_CONF_XSS_PROTECTION_ON: ${WEB_CONF_XSS_PROTECTION_ON:-true}
       WEB_CONF_XSS_PROTECTION_BLOCK: ${WEB_CONF_XSS_PROTECTION_BLOCK:-true}
-      #CSP    
+      #CSP
       WEB_CONF_XSS_CSP_ENABLED: ${WEB_CONF_XSS_CSP_ENABLED:-false}
       WEB_CONF_XSS_CSP_POLICY: ${WEB_CONF_XSS_CSP_POLICY:-"default-src 'self'"}
       WEB_CONF_XSS_CSP_REPORT_ONLY_POLICY: ${WEB_CONF_XSS_CSP_REPORT_ONLY_POLICY:-""}
-      
+
     expose:
       - 8585
       - 8586
@@ -341,7 +431,7 @@ services:
       - "8586:8586"
     depends_on:
       elasticsearch:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
       execute-migrate-all:
@@ -353,7 +443,7 @@ services:
 
   ingestion:
     container_name: openmetadata_ingestion
-    image: docker.getcollate.io/openmetadata/ingestion:1.2.2
+    image: docker.getcollate.io/openmetadata/ingestion:1.3.1
     depends_on:
       elasticsearch:
         condition: service_started
@@ -371,6 +461,16 @@ services:
       DB_SCHEME: ${AIRFLOW_DB_SCHEME:-mysql+pymysql}
       DB_USER: ${AIRFLOW_DB_USER:-airflow_user}
       DB_PASSWORD: ${AIRFLOW_DB_PASSWORD:-airflow_pass}
+      # extra connection-string properties for the database
+      # EXAMPLE
+      # require SSL (only for Postgres)
+      # properties: "?sslmode=require"
+      DB_PROPERTIES: ${AIRFLOW_DB_PROPERTIES:-}
+      # To test the lineage backend
+      # AIRFLOW__LINEAGE__BACKEND: airflow_provider_openmetadata.lineage.backend.OpenMetadataLineageBackend
+      # AIRFLOW__LINEAGE__AIRFLOW_SERVICE_NAME: local_airflow
+      # AIRFLOW__LINEAGE__OPENMETADATA_API_ENDPOINT: http://openmetadata-server:8585/api
+      # AIRFLOW__LINEAGE__JWT_TOKEN: ...
     entrypoint: /bin/bash
     command:
       - "/opt/airflow/ingestion_dependency.sh"
@@ -411,10 +511,10 @@ services:
   minio:
     image: minio/minio
     ports:
-          - "9000:9000"
-          - "9001:9001"
+      - "9000:9000"
+      - "9001:9001"
     volumes:
-          - ./minio_storage:/data
+      - ./minio_storage:/data
     networks:
       - app_net
     environment:
@@ -431,32 +531,21 @@ services:
     volumes:
     - ./metabase/urandom:/dev/random:ro
     ports:
-      - 3000:3000
+      - "3000:3000"
     environment:
       MB_DB_TYPE: postgres
       MB_DB_DBNAME: metabaseappdb
       MB_DB_USER: postgres
       MB_DB_PASS: password
       MB_DB_PORT: 5432
-      MB_DB_HOST: postgres
+      MB_DB_HOST: postgresql
     networks:
-      - metanet1
+      - app_net
     healthcheck:
       test: curl --fail -I http://localhost:3000/api/health || exit 1
       interval: 15s
       timeout: 5s
       retries: 5
-
-  postgres:
-    image: postgres:latest
-    container_name: postgres
-    hostname: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: metabaseappdb
-    networks:
-      - metanet1
 
 networks:
   app_net:
