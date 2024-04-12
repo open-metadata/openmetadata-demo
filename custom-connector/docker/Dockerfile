@@ -1,4 +1,4 @@
-FROM openmetadata/ingestion:1.3.0
+FROM openmetadata/ingestion:1.3.2
 
 # Let's use the same workdir as the ingestion image
 WORKDIR ingestion
@@ -8,4 +8,5 @@ USER airflow
 COPY connector connector
 COPY setup.py .
 COPY sample.csv .
+COPY addressbook.proto .
 RUN pip install --no-deps .

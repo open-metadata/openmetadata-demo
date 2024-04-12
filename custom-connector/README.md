@@ -120,6 +120,8 @@ to set the following Connection Options:
 
 To run the Protobuf Custom Connector, the Python class will be `connector.my_protobuf_connector.ProtobufConnector` and we'll need
 to set the following Connection Options:
-- `source_directory`: `/opt/airflow/ingestion/sample.proto`
+- `source_directory`: `/opt/airflow/ingestion/person_info.proto`
 - `business_unit`: Any name you'd like (preferably no special characters).
-- `schema_name`: The name of schema model in proto file.
+- `schema_name`: The name of schema model in proto file. For our example: `person_info`. This is the main model that we want to ingest, and can reference other sub-models on the same file.
+    Note that you need to convert from `CamelCase` to `snake_case` for the schema name. For example, `PersonInfo` in the proto file will be `person_info`. This is required
+    for the internal behavior in protobuf.
