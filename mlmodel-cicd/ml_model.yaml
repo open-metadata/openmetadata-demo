@@ -7,31 +7,53 @@ description: |
 
 algorithm: XGBoost
 target: expected_time
-
+tags:
+  - tagFQN : PII.None
+    description: Tag None
+    labelType: Manual
+    state: Confirmed
+    source: Classification
+  - tagFQN: PersonalData.Personal
+    description: Personal Data Tag
+    labelType: Manual
+    state: Confirmed
+    source: Classification
+  - tagFQN: SmartMed.Average
+    description: Smartmed Tag
+    labelType: Manual
+    state: Confirmed
+    source: Classification
 mlFeatures:
   - name: last_update_bucket
     dataType: categorical
     featureAlgorithm: Bucketing
+    tags:
+      - tagFQN: PII.None
+        description: Tag None
+        labelType: Manual
+        state: Confirmed
+        source: Classification
+
     featureSources:
-      - name: orders
+      - name: last_update
         dataType: timestamp
-        dataSourceFqn: demo_pg.postgres.public.orders
+        dataSourceFqn: orders.postgres.public.orders
   - name: restaurant_dimension
     dataType: numerical
     featureAlgorithm: PCA
     featureSources:
       - name: rating
         dataType: integer
-        dataSourceFqn: demo_pg.postgres.public.restaurants
+        dataSourceFqn: orders.postgres.public.restaurants
       - name: average_price
         dataType: integer
-        dataSourceFqn: demo_pg.postgres.public.restaurants
+        dataSourceFqn: orders.postgres.public.restaurants
   - name: is_premium
     dataType: categorical
     featureSources:
       - name: premium
         dataType: boolean
-        dataSourceFqn: demo_pg.postgres.public.users
+        dataSourceFqn: orders.postgres.public.users
 
 mlHyperParameters:
   - name: regularisation
@@ -41,3 +63,4 @@ mlHyperParameters:
 mlStore:
   storage: s3://path-to-pickle
   imageRepository: https://docker.hub.com/image
+
