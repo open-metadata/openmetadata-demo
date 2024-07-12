@@ -106,7 +106,7 @@ class ProtobufConnector(Source):
 
     @classmethod
     def create(
-        cls, config_dict: dict, metadata_config: OpenMetadataConnection
+        cls, config_dict: dict, metadata: OpenMetadata, pipeline_name: Optional[str] = None
     ) -> "ProtobufConnector":
         config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
         connection: CustomDatabaseConnection = config.serviceConnection.__root__.config
@@ -114,7 +114,7 @@ class ProtobufConnector(Source):
             raise InvalidProtobufConnectorException(
                 f"Expected CustomDatabaseConnection, but got {connection}"
             )
-        return cls(config, metadata_config)
+        return cls(config, metadata)
 
     def yield_create_request_database_service(self):
         yield Either(

@@ -45,10 +45,10 @@ class MyAwesomeConnector(Source):
 
     @classmethod
     def create(
-        cls, config_dict: dict, metadata_config: OpenMetadataConnection
+        cls, config_dict: dict, metadata: OpenMetadata, pipeline_name: Optional[str] = None
     ) -> "MyAwesomeConnector":
         config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
-        return cls(config, metadata_config)
+        return cls(config, metadata)
 
     def prepare(self):
         pass
