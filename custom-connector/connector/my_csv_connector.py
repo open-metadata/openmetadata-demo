@@ -105,7 +105,7 @@ class CsvConnector(Source):
 
     @classmethod
     def create(
-        cls, config_dict: dict, metadata_config: OpenMetadataConnection
+        cls, config_dict: dict, metadata: OpenMetadata, pipeline_name: Optional[str] = None
     ) -> "CsvConnector":
         config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
         connection: CustomDatabaseConnection = config.serviceConnection.__root__.config
@@ -113,7 +113,7 @@ class CsvConnector(Source):
             raise InvalidSourceException(
                 f"Expected CustomDatabaseConnection, but got {connection}"
             )
-        return cls(config, metadata_config)
+        return cls(config, metadata)
 
     @staticmethod
     def read_row_safe(row: Dict[str, Any]):
