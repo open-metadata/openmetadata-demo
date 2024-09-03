@@ -4,11 +4,12 @@ source:
   serviceConnection:
     config:
       type: CustomDatabase
-      sourcePythonClass: connector.my_protobuf_connector.ProtobufConnector
+      sourcePythonClass: connector.my_advanced_protobuf_connector.AdvancedProtobufConnector
       connectionOptions:
-        source_directory: person_info.proto
+        source_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/examples/
+        staging_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/staging/
         business_unit: BU
-        schema_name: person_info
+        schema_name: employee
   sourceConfig:
     config:
       type: DatabaseMetadata
@@ -16,8 +17,9 @@ sink:
   type: metadata-rest
   config: {}
 workflowConfig:
-  loggerLevel: INFO
+  loggerLevel: DEBUG
   openMetadataServerConfig:
+    enableVersionValidation: false
     hostPort: http://localhost:8585/api
     authProvider: openmetadata
     securityConfig:
