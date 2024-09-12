@@ -217,21 +217,69 @@ PII_TAG_LABEL = TagLabel(
     source=TagSource.Classification,
 )
 
-metadata.patch_tag(entity=Table, source=table_b_entity, tag_label=PII_TAG_LABEL)
-metadata.patch_tag(
-    entity=Table, source=table_b_entity, tag_label=PII_TAG_LABEL, operation="remove"
+# PATCH TAG EXAMPLE
+
+from metadata.generated.schema.type.tagLabel import (
+    LabelType,
+    State,
+    TagLabel,
+    TagFQN,
+    TagSource,
 )
-metadata.patch_column_tag(
+from metadata.ingestion.ometa.mixins.patch_mixin_utils import PatchOperation
+
+metadata.patch_tags(
+            entity=Table, source=table_entity, tag_labels=[TagLabel(tagFQN=TagFQN("Tier.Tier3"), source=TagSource.Classification, labelType=LabelType.Manual, state=State.Confirmed)], operation=PatchOperation.ADD
+        )
+
+
+from metadata.ingestion.models.table_metadata import ColumnTag
+
+metadata.patch_column_tags(
     table=table_b_entity,
-    column_fqn="test-snowflake.test-db.test-schema.tableB.id",
-    tag_label=PII_TAG_LABEL,
+    column_tags=[ColumnTag(column_fqn="test-snowflake.test-db.test-schema.tableB.id", tag_label=PII_TAG_LABEL)]
 )
-metadata.patch_column_tag(
+metadata.patch_column_tags(
     table=table_b_entity,
-    column_fqn="test-snowflake.test-db.test-schema.tableB.id",
-    tag_label=PII_TAG_LABEL,
-    operation="remove",
+    column_tags=[ColumnTag(column_fqn="test-snowflake.test-db.test-schema.tableB.id", tag_label=PII_TAG_LABEL)],
+    operation=PatchOperation.REMOVE
 )
+
+
+# PATCH OPERATION TO UPDATE DESCRIPTION ( TABLE ENTITY )
+from copy import deepcopy
+
+from metadata.generated.schema.type.basic import Markdown
+table_entity_modified = deepcopy(table_entity)
+table_entity_modified.description = Markdown("Updated description")
+
+metadata.patch(Table,table_entity, table_entity_modified)
+
+# OWNERS ( TABLE ENTITY )
+
+from metadata.generated.schema.type.entityReference import EntityReference
+from metadata.generated.schema.type.entityReferenceList import EntityReferenceList
+
+table_entity = metadata.get_by_name(entity=Table, fqn='table-fqn', fields=["owners"])
+table_entity_modified = deepcopy(table_entity)
+
+
+# PATCH OPERATION TO UPDATE USER OWNERS ( TABLE ENTITY )
+
+table_entity_modified.owners = EntityReferenceList(root=[EntityReference(id="id-of-the-user", type="user")])
+metadata.patch(Table,table_entity, table_entity_modified)
+
+
+# PATCH OPERATION TO UPDATE TEAM OWNERS ( TABLE ENTITY )
+
+table_entity_modified.owners = EntityReferenceList(root=[EntityReference(id="id-of-the-team", type="team")])
+metadata.patch(Table,table_entity, table_entity_modified)
+
+# PATCH OPERATION TO UPDATE TIER ( TABLE ENTITY )
+
+table_entity.tags = EntityReferenceList(root=[EntityReference(id="id-of-the-team", type="team")])
+metadata.patch(Table,table_entity, table_entity_modified)
+
 
 # Create pipeline
 #
