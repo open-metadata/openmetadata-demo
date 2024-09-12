@@ -248,7 +248,7 @@ pipeline_request = CreatePipelineRequest(
 )
 pipeline = metadata.create_or_update(pipeline_request)
 dest_pipeline = deepcopy(pipeline)
-dest_pipeline.description = "Update description using PATCH"
+dest_pipeline.description = Markdown("Update description using PATCH")
 metadata.patch(Pipeline, pipeline, dest_pipeline)
 
 ## Create Topic
