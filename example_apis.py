@@ -280,6 +280,14 @@ metadata.patch(Table,table_entity, table_entity_modified)
 table_entity.tags = EntityReferenceList(root=[EntityReference(id="id-of-the-team", type="team")])
 metadata.patch(Table,table_entity, table_entity_modified)
 
+# PATCH OPERATION ADD DOMAINS ( TABLE ENTITY )
+
+from metadata.generated.schema.entity.domains.domain import Domain
+#List Domains
+fetch_domain = metadata.list_entities(Domain).entities[2] # fetch random domain for example
+
+metadata.patch_domain(entity=table_entity, domain=fetch_domain)
+
 
 # Create pipeline
 #
@@ -294,6 +302,10 @@ pipeline_request = CreatePipelineRequest(
 )
 pipeline = metadata.create_or_update(pipeline_request)
 
+# PATCH PIPELINE DESCRIPTION
+dest_pipeline = deepcopy(pipeline)
+dest_pipeline.description = Markdown("Update description using PATCH")
+metadata.patch(Pipeline, pipeline, dest_pipeline)
 
 ## Create Topic
 topic_request = CreateTopicRequest(
