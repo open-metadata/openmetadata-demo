@@ -406,3 +406,106 @@ for glossary in all_glossaries:
     )
     for child in children:
         print(f"Term {child.fullyQualifiedName.__root__}")
+
+
+
+## Creating API collections and endpoints
+# Import necessary classes for creating API collections and endpoints
+from metadata.generated.schema.api.data.createAPICollection import (
+    CreateAPICollectionRequest,
+)
+from metadata.generated.schema.api.data.createAPIEndpoint import (
+    CreateAPIEndpointRequest,
+)
+
+# Example usage
+
+# Create a request to define a new API collection
+collection_request = CreateAPICollectionRequest(
+        name="pet",  # Name of the API collection
+        service="sample_api_service",  # Name of the service this collection belongs to
+        endpointURL="https://petstore3.swagger.io/#/pet",  # Base URL for the API collection
+)
+# Send the request to create or update the API collection
+metadata.create_or_update(data=collection_request)
+
+# Reference: https://docs.open-metadata.org/swagger.json
+
+# Create a request to define a new API endpoint within the collection
+endpoint_request = CreateAPIEndpointRequest(
+    **{
+        "name": "updatePet",  # Name of the endpoint
+        "displayName": "Update Pet",  # Display name for the endpoint
+        "description": "Update an existing pet",  # Description of what the endpoint does
+        "endpointURL": "https://petstore3.swagger.io/#/pet/updatePet",  # URL for the endpoint
+        "apiCollection": "sample_api_service.pet",  # Fully qualified name of the API collection
+        "requestMethod": "PUT",  # HTTP method used by the endpoint
+        "requestSchema": {
+            "schemaType": "JSON",  # Type of the request schema
+            "schemaFields": [
+                {
+                    "name": "id",  # Field name
+                    "dataType": "INT",  # Data type of the field
+                    "description": "ID of pet that needs to be updated",  # Description of the field
+                },
+                {
+                    "name": "name",  # Field name
+                    "dataType": "STRING",  # Data type of the field
+                    "description": "Name of pet",  # Description of the field
+                },
+                {
+                    "name": "category",  # Field name
+                    "dataType": "RECORD",  # Data type of the field
+                    "description": "Category of pet",  # Description of the field
+                    "children": [  # Nested fields for the category
+                        {
+                            "name": "id",  # Field name
+                            "dataType": "INT",  # Data type of the field
+                            "description": "ID of category",  # Description of the field
+                        },
+                        {
+                            "name": "name",  # Field name
+                            "dataType": "STRING",  # Data type of the field
+                            "description": "Name of category",  # Description of the field
+                        },
+                    ],
+                },
+            ],
+        },
+        "responseSchema": {
+            "schemaType": "JSON",  # Type of the response schema
+            "schemaFields": [
+                {
+                    "name": "id",  # Field name
+                    "dataType": "INT",  # Data type of the field
+                    "description": "ID of pet that needs to be updated",  # Description of the field
+                },
+                {
+                    "name": "name",  # Field name
+                    "dataType": "STRING",  # Data type of the field
+                    "description": "Name of pet",  # Description of the field
+                },
+                {
+                    "name": "category",  # Field name
+                    "dataType": "RECORD",  # Data type of the field
+                    "description": "Category of pet",  # Description of the field
+                    "children": [  # Nested fields for the category
+                        {
+                            "name": "id",  # Field name
+                            "dataType": "INT",  # Data type of the field
+                            "description": "ID of category",  # Description of the field
+                        },
+                        {
+                            "name": "name",  # Field name
+                            "dataType": "STRING",  # Data type of the field
+                            "description": "Name of category",  # Description of the field
+                        },
+                    ],
+                },
+            ],
+        },
+    }
+)
+# Send the request to create or update the API endpoint
+metadata.create_or_update(data=endpoint_request)
+
