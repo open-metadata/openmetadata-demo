@@ -431,6 +431,8 @@ collection_request = CreateAPICollectionRequest(
 # Send the request to create or update the API collection
 metadata.create_or_update(data=collection_request)
 
+# Reference: https://docs.open-metadata.org/swagger.json
+
 # Create a request to define a new API endpoint within the collection
 endpoint_request = CreateAPIEndpointRequest(
     **{
