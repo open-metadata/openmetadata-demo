@@ -422,11 +422,9 @@ from metadata.generated.schema.api.data.createAPIEndpoint import (
 
 # Create a request to define a new API collection
 collection_request = CreateAPICollectionRequest(
-    **{
-        "name": "pet",  # Name of the API collection
-        "service": "sample_api_service",  # Name of the service this collection belongs to
-        "endpointURL": "https://petstore3.swagger.io/#/pet",  # Base URL for the API collection
-    }  # type: ignore
+        name="pet",  # Name of the API collection
+        service="sample_api_service",  # Name of the service this collection belongs to
+        endpointURL="https://petstore3.swagger.io/#/pet",  # Base URL for the API collection
 )
 # Send the request to create or update the API collection
 metadata.create_or_update(data=collection_request)
@@ -506,7 +504,7 @@ endpoint_request = CreateAPIEndpointRequest(
                 },
             ],
         },
-    }  # type: ignore
+    }
 )
 # Send the request to create or update the API endpoint
 metadata.create_or_update(data=endpoint_request)
