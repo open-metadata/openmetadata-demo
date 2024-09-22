@@ -253,6 +253,7 @@ from metadata.generated.schema.type.basic import Markdown
 table_entity_modified = deepcopy(table_entity)
 table_entity_modified.description = Markdown("Updated description")
 
+
 metadata.patch(Table,table_entity, table_entity_modified)
 
 # OWNERS ( TABLE ENTITY )
@@ -569,3 +570,24 @@ endpoint_request = CreateAPIEndpointRequest(
 # Send the request to create or update the API endpoint
 metadata.create_or_update(data=endpoint_request)
 
+
+
+# GROUP PATCH CALLS EXAMPLE
+
+from copy import deepcopy
+
+from metadata.generated.schema.type.basic import Markdown
+from metadata.generated.schema.type.tagLabel import (
+    LabelType,
+    State,
+    TagLabel,
+    TagFQN,
+    TagSource,
+)
+table_entity = metadata.get_by_name(Table, 'redshift_dbt.dev.public.customers_clean', fields=["tags"])
+table_entity_modified: Table = deepcopy(table_entity)
+table_entity_modified.description = Markdown("Updated description")
+table_entity_modified.displayName = "Updated display name"
+table_entity_modified.tags = [TagLabel(tagFQN=TagFQN("Tier.Tier3"), source=TagSource.Classification, labelType=LabelType.Manual, state=State.Confirmed)]
+
+metadata.patch(Table,table_entity, table_entity_modified)
