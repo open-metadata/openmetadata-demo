@@ -106,14 +106,6 @@ class AdvancedProtobufConnector(Source):
                 "Missing business_unit connection option"
             )
 
-        self.schema_name: str = self.service_connection.connectionOptions.root.get(
-            "schema_name"
-        )
-        if not self.business_unit:
-            raise InvalidProtobufConnectorException(
-                "Missing schema_name connection option"
-            )
-
         self.data = None
 
         super().__init__()
