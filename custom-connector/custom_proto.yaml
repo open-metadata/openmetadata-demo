@@ -9,7 +9,6 @@ source:
         source_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/examples/
         staging_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/staging/
         business_unit: BU
-        schema_name: employee
   sourceConfig:
     config:
       type: DatabaseMetadata
