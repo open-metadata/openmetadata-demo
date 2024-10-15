@@ -6,8 +6,8 @@ source:
       type: CustomDatabase
       sourcePythonClass: connector.my_advanced_protobuf_connector.AdvancedProtobufConnector
       connectionOptions:
-        source_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/examples/
-        staging_directory: /Users/apple/Desktop/ulixius/new/openmetadata-demo/custom-connector/staging/
+        source_directory: /path/to/source/dir
+        staging_directory: /tmp/openmetadata-staging
         business_unit: BU
   sourceConfig:
     config:
