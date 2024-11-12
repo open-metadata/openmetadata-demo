@@ -3,8 +3,8 @@
 The goal of this demo is learning how to leverage the OpenMetadata API to create a CICD process
 that will publish the changes on our ML Models once they go to PROD.
 
-**OBS**: Note that this demo is based on OpenMetadata version 1.0.1. If playing locally with the `openmetadata-ingestion`
-package, make sure to install `openmetadata-ingestion~=1.0.1`
+**OBS**: Note that this demo is based on OpenMetadata version 1.5. If playing locally with the `openmetadata-ingestion`
+package, make sure to install `openmetadata-ingestion~=1.5`
 
 ## Requirements
 
@@ -19,7 +19,7 @@ Docker Compose version v2.2.3
 
 ### Python 3
 
-OpenMetadata supports Python 3.7+. This demo has been built and tested using Python 3.9:
+OpenMetadata supports Python 3.8+. This demo has been built and tested using Python 3.9:
 
 ```bash
 ❯ python -V
@@ -135,6 +135,3 @@ You can find more information in the [docs](https://docs.open-metadata.org/sdk/p
 ## Ingest ML metadata
 
 After ingesting the Postgres metadata, we can execute `python mlmodel_cicd.py` to mimic our CICD process.
-
-Caveat: Running this in 0.13.0 has a known issue on the order of the lineage nodes for ML Models. We'll update
-this demo to have it working with the fixed logic in 0.13.1
