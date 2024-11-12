@@ -77,10 +77,10 @@ def get_data_source_from_fqn(metadata: OpenMetadata, fqn: Optional[str]) -> Opti
         table: Table = metadata.get_by_name(entity=Table, fqn=fqn)
         if table:
             return EntityReference(
-                id=table.id.__root__,
+                id=table.id.root,
                 type="table",
-                name=table.name.__root__,
-                fullyQualifiedName=table.fullyQualifiedName.__root__,
+                name=table.name.root,
+                fullyQualifiedName=table.fullyQualifiedName.root,
             )
 
     return None
@@ -154,7 +154,7 @@ def update_openmetadata(raw_meta: dict) -> None:
         mlHyperParameters=[
             MlHyperParameter(
                 name=param["name"],
-                value=param["value"],
+                value=str(param["value"]),
                 description=param.get("description"),
             )
             for param in raw_meta.get("mlHyperParameters") or []
