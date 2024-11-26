@@ -1,6 +1,20 @@
+# Quickstart
+
+To run the custom connector:
+
+```shell
+# deploy OpenMetadata
+python3 -m venv venv
+source venv/bin/activate
+cd custom-connector
+pip .
+metadata ingest custom.yaml
+```
+
 # Creating a Custom Connector
 
 In this demo we'll prepare the ingredients to set up a custom connector for OpenMetadata.
+
 
 ## Step 1 - Prepare your Connector
 

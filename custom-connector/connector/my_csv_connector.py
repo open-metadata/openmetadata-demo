@@ -81,10 +81,10 @@ class CsvConnector(Source):
         self.config = config
         self.metadata = metadata
 
-        self.service_connection = config.serviceConnection.__root__.config
+        self.service_connection = config.serviceConnection.root.config
 
         self.source_directory: str = (
-            self.service_connection.connectionOptions.__root__.get("source_directory")
+            self.service_connection.connectionOptions.root.get("source_directory")
         )
         if not self.source_directory:
             raise InvalidCsvConnectorException(
@@ -92,7 +92,7 @@ class CsvConnector(Source):
             )
 
         self.business_unit: str = (
-            self.service_connection.connectionOptions.__root__.get("business_unit")
+            self.service_connection.connectionOptions.root.get("business_unit")
         )
         if not self.business_unit:
             raise InvalidCsvConnectorException(
@@ -107,8 +107,8 @@ class CsvConnector(Source):
     def create(
         cls, config_dict: dict, metadata: OpenMetadata, pipeline_name: Optional[str] = None
     ) -> "CsvConnector":
-        config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
-        connection: CustomDatabaseConnection = config.serviceConnection.__root__.config
+        config: WorkflowSource = WorkflowSource.model_validate(config_dict)
+        connection: CustomDatabaseConnection = config.serviceConnection.root.config
         if not isinstance(connection, CustomDatabaseConnection):
             raise InvalidSourceException(
                 f"Expected CustomDatabaseConnection, but got {connection}"
