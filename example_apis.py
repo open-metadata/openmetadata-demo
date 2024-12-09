@@ -591,3 +591,32 @@ table_entity_modified.displayName = "Updated display name"
 table_entity_modified.tags = [TagLabel(tagFQN=TagFQN("Tier.Tier3"), source=TagSource.Classification, labelType=LabelType.Manual, state=State.Confirmed)]
 
 metadata.patch(Table,table_entity, table_entity_modified)
+
+
+# PATCH OPERATION To Move User from one source to destination
+
+from metadata.generated.schema.entity.teams.team import Team
+from copy import deepcopy
+team_object_source:Team = metadata.get_by_id(Team, "8434bb87-21af-494c-92ab-2119f066c526"
+,fields=["*"])
+
+# team_object_source:Team = metadata.get_by_name(Team,  "fqn.of.the.team"
+# ,fields=["*"])
+
+team_object_destination:Team = metadata.get_by_id(Team, "22ab3362-UUID-TEAM-f4d6fc0f4f2b"
+,fields=["*"])
+
+# team_object_destination:Team = metadata.get_by_name(Team, "fqn.of.the.team"
+# ,fields=["*"])
+
+
+team_object_source_copy = deepcopy(team_object_source)
+team_object_destination_copy = deepcopy(team_object_destination)
+for idx, user in enumerate(team_object_source.users.root):
+    if user.name in {'user name', 'Jane', 'John'}:
+    # if str(user.id.root) in {'uuid'}:
+        team_object_destination_copy.users.root.append(user)
+        team_object_source_copy.users.root.pop(idx)
+
+metadata.patch(Team, team_object_source, team_object_source_copy)
+metadata.patch(Team, team_object_destination, team_object_destination_copy)
