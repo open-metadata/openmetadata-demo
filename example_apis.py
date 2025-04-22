@@ -620,3 +620,11 @@ for idx, user in enumerate(team_object_source.users.root):
 
 metadata.patch(Team, team_object_source, team_object_source_copy)
 metadata.patch(Team, team_object_destination, team_object_destination_copy)
+
+# List all ingestion pipelines
+from metadata.generated.schema.entity.services.ingestionPipelines.ingestionPipeline import (
+    IngestionPipeline,
+)
+
+list_ingestion_pipelines = list(metadata.list_all_entities(IngestionPipeline, skip_on_failure=True))
+print(list_ingestion_pipelines)
