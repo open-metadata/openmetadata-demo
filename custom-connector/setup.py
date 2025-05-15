@@ -11,7 +11,7 @@
 
 from setuptools import setup, find_packages
 
-base_requirements = {"openmetadata-ingestion~=1.5.0"}
+base_requirements = {"openmetadata-ingestion~=1.7.0"}
 
 setup(
     name="custom-connector",
@@ -21,7 +21,7 @@ setup(
     license="Apache License 2.0",
     description="Ingestion Framework for OpenMetadata",
     long_description_content_type="text/markdown",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=list(base_requirements),
     packages=find_packages(include=["connector", "connector.*"]),
 )
