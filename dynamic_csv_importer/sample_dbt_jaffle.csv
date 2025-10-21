@@ -1,0 +1,16 @@
+column.name*,column.displayName,column.description,column.dataTypeDisplay,column.dataType*,column.arrayDataType,column.dataLength,column.tags,column.glossaryTerms
+customer_id,Customer ID,Unique identifier for each customer in the system,INTEGER,INT,,,"PII.CustomerData,Core.Identifier",Customer.CustomerID
+first_name,First Name,Customer's first name as provided during registration,VARCHAR,STRING,,,PII.PersonalData,Customer.PersonalInfo
+last_name,Last Name,Customer's last name or family name,VARCHAR,STRING,,,PII.PersonalData,Customer.PersonalInfo
+email,Email Address,Primary email address for customer communication,VARCHAR,STRING,,,PII.ContactInfo,Customer.ContactDetails
+order_id,Order ID,Unique identifier for each order placed by customers,INTEGER,INT,,,"Core.Identifier,Sales.OrderData",Order.OrderID
+order_date,Order Date,Date when the order was placed by the customer,DATE,DATE,,,Sales.OrderData,Order.OrderInfo
+status,Order Status,Current status of the order (pending/shipped/delivered),VARCHAR,STRING,,,Sales.OrderData,Order.OrderInfo
+amount,Order Amount,Total monetary value of the order in USD,DECIMAL,DOUBLE,,,"Sales.OrderData,Finance.Revenue",Order.Financial
+payment_id,Payment ID,Unique identifier for the payment transaction,INTEGER,INT,,,"Core.Identifier,Finance.Payment",Payment.PaymentID
+payment_method,Payment Method,Method used for payment (credit_card/paypal/bank_transfer),VARCHAR,STRING,,,Finance.Payment,Payment.PaymentMethod
+credit_card_amount,Credit Card New Amount,Amount paid using credit card,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
+coupon_amount,Coupon Amount,Discount amount applied through coupon codes,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
+bank_transfer_amount,Bank Transfer Amount,Amount paid via bank transfer new,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
+gift_card_amount,Gift Card Amount,Amount paid using gift card new balance,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
+country_name,Country Super Name,this is a cool new description,,,,,,
