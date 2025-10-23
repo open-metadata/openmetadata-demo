@@ -55,23 +55,27 @@ The connector is configured through the `user_updater.yaml` file. Key settings:
 
 ```yaml
 source:
-  type: connector.user_updater.UserUpdaterSource
+  type: CustomDatabase
   serviceName: user_updater_service
   serviceConnection:
     config:
-      type: Custom
+      type: CustomDatabase
       sourcePythonClass: connector.user_updater.UserUpdaterSource
+      connectionOptions:
+         graphql_endpoint: "http://localhost:4000"
   sourceConfig:
     config:
-      graphql_endpoint: "http://localhost:4000"  # Your GraphQL server endpoint
-      
+      type: DatabaseMetadata
+sink:
+  type: metadata-rest
+  config: {}
 workflowConfig:
   loggerLevel: INFO
   openMetadataServerConfig:
-    hostPort: "http://localhost:8585/api"        # Your OpenMetadata server
+    hostPort: "http://localhost:8585/api"
     authProvider: "openmetadata"
     securityConfig:
-      jwtToken: "your-jwt-token-here"            # Your JWT token from OpenMetadata
+      jwtToken: "eyJraWQiOiJHYjM4OWE
 ```
 
 **Important Configuration Notes:**
