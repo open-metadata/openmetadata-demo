@@ -1,15 +1,16 @@
 # AI Driven Automation in Open-Source Metadata Platforms: Embedding an MCP Server
 
-Hello Open Data Science Conference! Thank you for joining our training session! You can find the contents below, please let me know if there's anything you need!
+Hello PyCon Ireland! Thank you for joining our training session! You can find the contents below, please let me know if there's anything you need!
 
 *Note - This training was prepared using a MacBook*
 
 ## Contents
 1. [Prerequisites](#prerequisites)
 2. [OpenMetadata](#openmetadata)
-3. [Prompt party!](#party) 🎉
-4. [goose Recipes](#goose)
-5. [Wrapping up and feedback](#end)
+3. [goose](#goose) 
+4. [Integrating Python](#python)
+5. [Scaling out with Collate](#collate)
+6. [Wrapping up and feedback](#end)
 
 ## Prerequisites <a name="prerequisites"></a>
 Before getting started, please make sure you have the following three services on your laptop:
@@ -30,7 +31,7 @@ With the prerequisites installed, we will move on to installing OpenMetadata. Op
 We'll bring all these services online with the following commands:
 
 ```
-curl -sL -o docker-compose-postgres.yml https://github.com/open-metadata/OpenMetadata/releases/download/1.10.3-release/docker-compose-postgres.yml
+curl -sL -o docker-compose-postgres.yml https://github.com/open-metadata/OpenMetadata/releases/download/1.10.4-release/docker-compose-postgres.yml
 docker compose -f docker-compose-postgres.yml up --detach
 ```
 
@@ -74,7 +75,7 @@ An OpenMetadata Personal Access Token (PAT) will be needed to add OpenMetadata t
 |:--:|
 | An OpenMetadata PAT is needed to use it in goose |
 
-Copy this token for to paste into goose later.
+Copy this token to paste into goose later.
 
 With OpenMetadata up and running, we can add it's MCP server as a goose extension! Open goose, select Extensions, then **+Add custom extension**
 
@@ -97,7 +98,7 @@ Please create your OpenMetadata Extension with the following options:
 |:--:|
 | OpenMetadata MCP Server in goose |
 
-## Prompt party! 🎉 <a name="party"></a>
+## goose 🎉 <a name="goose"></a>
 Now we'll recreate one of the usecases we just saw from the community!
 
 In our [sample data schema](http://localhost:8585/databaseSchema/postgres.postgres.public), you will see 7 tables. We will add some classifications to this schema and have an AI agent push those changes to every table.
@@ -108,32 +109,113 @@ In our [sample data schema](http://localhost:8585/databaseSchema/postgres.postgr
   * Select **Gold**
   * Select :white_check_mark: to apply this certification to the *schema*
 * In goose
-  * Select model
-  * Use the following prompt
-    ```
-    Take classifications from postgres.postgres.public and apply them to all the tables that are listed in postgres.postgres.public
-
-    Here's what to do step by step:
-
-    1. **Verify postgres.postgres.public exists in openmetadata**
-    2. **Ask user if they will be propagating the postgres.postgres.public owner/certification or a particular tag**
-    3. **Get details of postgres.postgres.public in openmetadata**
-      - the owner/certification/tag to be applied to other assets
-    4. **List tables of postgres.postgres.public**
-    5. **Patch all tables that are returned**
-    ```
-  * Back in OpenMetadata
-    * [Tables](http://localhost:8585/table/postgres.postgres.public.actor) should now have the same Certification!   
-## goose Recipes <a name="goose"></a>
-We can make this even easier via goose Recipes. Recipes are files that contain all the details to allow goose to do one specific task.
-
-* In OpenMetadata
-  * Go back to the same [public databaseSchema](http://localhost:8585/databaseSchema/postgres.postgres.public)
-  * Change the tier and/or add *admin* as the asset owner, copy the fully qualified name (fqn) or this schema `postgres.postgres.public`
-* Go to the [Use OpenMetadata goose Recipe](https://block.github.io/goose/recipes/detail?id=use-openmetadata)
-* Scroll down to *Launch in Goose Desktop*, and paste your fqn into the new goose session!
+  * Go to the [Use OpenMetadata goose Recipe](https://block.github.io/goose/recipes/detail?id=use-openmetadata)
+  * Scroll down to *Launch in Goose Desktop*, and paste your fqn `postgres.postgres.public` into the new goose session!  
+* Back in OpenMetadata
+   * [Tables](http://localhost:8585/table/postgres.postgres.public.actor) should now have the same Certification!      
 
 Feel free to experiment with OpenMetadata, OpenMetadata MCP, and goose!
+
+## Integrating Python via Jupyter MCP <a name="python"></a>
+For this lab, we are going to create a virtual environment so that everyone can work from the same Python.
+
+```
+python3 -m venv pycon
+source pycon/bin/activate
+```
+
+From the pycon virtual environment, run:
+
+```
+pip install jupyterlab==4.4.1 jupyter-collaboration==4.0.2 jupyter-mcp-tools==0.1.3 ipykernel uv
+pip uninstall -y pycrdt datalayer_pycrdt
+pip install datalayer_pycrdt==0.12.17
+jupyter lab --port 8888 --IdentityProvider.token pycon --ip 0.0.0.0
+```
+This will start a JupyterLab instance at [http://localhost:8888/](http://localhost:8888/), if you are prompt for a password, enter `pycon`.
+
+### Adding JupyterLab to goose
+Just like OpenMetadata, we will add JupyterLab as an extension to goose with the following options:
+
+* Extension Name: `jupyter`
+* Type: `STDIO`
+* Description:
+* Command: `uvx jupyter-mcp-server@latest`
+* Timeout: `300`
+* Environment Variables
+  * Variable name: `JUPYTER_URL`
+   * Value: `"http://localhost:8888"`
+  * Variable name: `JUPYTER_TOKEN`
+    * Value: `pycon`
+  * Variable name: `ALLOW_IMG_OUTPUT`
+    * Value: `true`
+  * Make sure to Select **+Add** for each Environment Variable
+* Select **Save Changes**
+
+| ![jupyter-extension.png](./images/jupyter-extension.png) |
+|:--:|
+| Extension details for Jupyter MCP Server |
+
+We can now use the JupyterLab and OpenMetadata MCP Servers together in goose!
+
+In goose, prompt
+
+```
+How many tables are in postgres.postgres.public?
+```
+
+then,
+
+```
+How many tables are in postgres.postgres.public, postgres.airflow_db.public, and postgres.openmetadata_db.public
+```
+
+goose should return 7, 48, and 147, then we can bring JupyterLab in,
+
+```
+Create a new notebook pycon.ipynb and build a visualization with the table counts for each postgres database
+```
+
+| ![goose-notebook.png](./images/goose-notebook.png) |
+|:--:|
+| Combining MCP Servers from OpenMetadata and Jupyter! |
+
+## Scaling out with Collate <a name="collate"></a>
+The [OpenMetadata Sandbox](https://sandbox.open-metadata.org/) is an OpenMetadata instance hosted and curated by Collate. We can use it for a better look at combining OpenMetadata and Jupyter MCP servers. Log into the sandbox, and generate a Personal Access Token for yourself, just like before, and add one more extension to goose.
+
+* Extension Name: `collate`
+* Type: `STDIO`
+* Description:
+* Command: `uvx jupyter-mcp-server@latest`
+* Timeout: `300`
+* Environment Variables
+ * Variable name: `AUTH_HEADER`
+ * Value:
+   ```
+   Bearer <PASTE_YOUR_OpenMetadata_TOKEN_HERE>
+   ```
+* Select **+Add**, then **Save Changes**
+
+| ![collate-extension.png](./images/collate-extension.png) |
+|:--:|
+| Adding the OpenMetadata Sandbox to goose |
+
+For a model to be able to easily differentiate between this OpenMetadata and the one on your laptop, we have named it Collate. Now you can try the following prompts:
+
+```
+How many assets are in collate?
+```
+
+or:
+
+```
+How many assets have gold certifications, silver certifications, and bronze certifications?
+```
+
+and to combine it with the Jupyter MCP server:
+```
+Create a new notebook collate.ipynb and build a visualization with the asset counts by type in one cell and the assets counts by certification in another.
+```
 
 ## Wrapping up and feedback <a name="end"></a>
 To shutdown your OpenMetadata services, run the following command:
@@ -143,11 +225,3 @@ docker compose down
 ```
 
 Or, you can add additional metadata connectors to your OpenMetadata instance! Popular connectors include Snowflake, BigQuery, Databricks, and Tableau!
-
-## Troubleshooting
-Elasticsearch issues?
-Run `docker ps` if `openmetadata_elasticsearch` is not running, you may not have enough memory allocated to Docker Desktop
-
-Can't build your own OpenMetadata? Create an account in our Sandbox, [generate a personal access token](https://docs.open-metadata.org/latest/how-to-guides/mcp#adding-a-personal-access-token-to-your-mcp-client), and connect to [goose](#setup) using https://sandbox.open-metadata.org/ instead of http://localhost:8585/
-
-Model running into rate-limiting issue? Instruct the model to batch patch requests in order to reduce chances of rate-limiting.
