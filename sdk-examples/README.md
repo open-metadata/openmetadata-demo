@@ -25,8 +25,8 @@ This directory contains lean, efficient examples demonstrating all major operati
 
 python services.py           # Service creation examples
 python entities.py           # Entity creation examples (requires services)
-python metadata_ops.py       # Metadata operations (coming in Phase 2)
-python lineage.py            # Lineage examples (coming in Phase 2)
+python metadata_ops.py       # Metadata operations (tags, descriptions, owners, domains)
+python lineage.py            # Lineage examples (data flow tracking)
 python queries.py            # Read/query operations (coming in Phase 3)
 python advanced.py           # Advanced patterns (coming in Phase 3)
 
@@ -109,25 +109,29 @@ Examples for managing metadata (tags, descriptions, owners, domains, glossaries)
 
 | Example | SDK API | Line | Required Args |
 |---------|---------|------|---------------|
-| **4.1 Table-Level Tags** | `metadata.patch_tags()` | ~30 | `entity`, `source`, `tag_labels`, `operation` (ADD/REMOVE) |
-| **4.2 Column-Level Tags** | `metadata.patch_column_tags()` | ~60 | `table`, `column_tags` (list of `ColumnTag`) |
-| **4.3 Update Description** | `metadata.patch()` | ~90 | `entity_type`, `source_entity`, `modified_entity` (with new description) |
-| **4.4 Update Owners (User/Team)** | `metadata.patch()` | ~120 | `entity_type`, `source_entity`, `modified_entity` (with `EntityReferenceList`) |
-| **4.5 Assign Domain** | `metadata.patch_domain()` | ~160 | `entity`, `domain` |
-| **4.6 Glossaries & Terms** | `metadata.list_all_entities()` | ~185 | `entity` (Glossary/GlossaryTerm), `params`, `fields` |
+| **4.1 Table-Level Tags** | `metadata.patch_tags()` | ~95 | `entity`, `source`, `tag_labels`, `operation` (ADD/REMOVE) |
+| **4.2 Column-Level Tags** | `metadata.patch_column_tags()` | ~155 | `table`, `column_tags` (list of `ColumnTag`) |
+| **4.3 Update Description** | `metadata.patch()` | ~225 | `entity_type`, `source_entity`, `modified_entity` (with new description) |
+| **4.4 Update Owners (User/Team)** | `metadata.patch()` | ~280 | `entity_type`, `source_entity`, `modified_entity` (with `EntityReferenceList`) |
+| **4.5 Assign Domain** | `metadata.patch_domain()` | ~355 | `entity`, `domain` |
+| **4.6 Glossaries & Terms** | `metadata.list_all_entities()` | ~395 | `entity` (Glossary/GlossaryTerm), `params`, `fields` |
+| **4.7 Grouped PATCH Operations** | `metadata.patch()` | ~450 | Multiple field updates in single PATCH |
 
 **SDK Modules:**
 - `metadata.ingestion.ometa.mixins.patch_mixin_utils.PatchOperation`
 - `metadata.ingestion.models.table_metadata.ColumnTag`
 - `metadata.generated.schema.type.tagLabel.TagLabel`
 - `metadata.generated.schema.type.entityReference.EntityReference`
+- `metadata.generated.schema.type.basic.Markdown`
 
 **Source Reference:**
-- Tags: [example_apis.py:220-246](../example_apis.py#L220-L246)
+- Tags (table): [example_apis.py:220-233](../example_apis.py#L220-L233)
+- Tags (column): [example_apis.py:236-246](../example_apis.py#L236-L246)
 - Descriptions: [example_apis.py:249-257](../example_apis.py#L249-L257)
 - Owners: [example_apis.py:259-277](../example_apis.py#L259-L277)
 - Domains: [example_apis.py:284-290](../example_apis.py#L284-L290)
 - Glossaries: [example_apis.py:454-469](../example_apis.py#L454-L469)
+- Grouped Patches: [example_apis.py:575-593](../example_apis.py#L575-L593)
 
 ---
 
@@ -136,14 +140,24 @@ Examples for creating lineage relationships between entities.
 
 | Example | SDK API | Line | Required Args |
 |---------|---------|------|---------------|
-| **5.1 Table → Pipeline → Table** | `metadata.add_lineage()` | ~30 | `edge` with `fromEntity`, `toEntity` (EntityReference) |
-| **5.2 Complex Multi-hop Lineage** | `metadata.add_lineage()` | ~70 | Multiple `AddLineageRequest` calls |
-| **5.3 ML Model Lineage** | `metadata.add_lineage()` | ~110 | Lineage from data sources to ML models |
+| **5.1 Table → Pipeline → Table** | `metadata.add_lineage()` | ~100 | `edge` with `fromEntity`, `toEntity` (EntityReference) |
+| **5.2 Direct Table → Table** | `metadata.add_lineage()` | ~180 | Direct lineage edge (views, CTAS) |
+| **5.3 Multi-Source (Many → One)** | `metadata.add_lineage()` | ~220 | Multiple sources to one destination (joins, unions) |
+| **5.4 Fan-Out (One → Many)** | `metadata.add_lineage()` | ~290 | One source to multiple destinations (CDC, broadcast) |
+| **5.5 Query Entity Lineage** | `metadata.get_by_name()` | ~350 | Retrieve lineage for impact analysis |
 
-**SDK Module:** `metadata.generated.schema.api.lineage.addLineage.AddLineageRequest`
+**SDK Modules:**
+- `metadata.generated.schema.api.lineage.addLineage.AddLineageRequest`
+- `metadata.generated.schema.type.entityLineage.EntitiesEdge`
+- `metadata.generated.schema.type.entityReference.EntityReference`
+
+**Use Cases:**
+- **Impact Analysis**: What breaks if I change this?
+- **Data Provenance**: Where did this data come from?
+- **Dependency Tracking**: What depends on this entity?
 
 **Source Reference:**
-- Basic Lineage: [example_apis.py:326-344](../example_apis.py#L326-L344)
+- Table-Pipeline-Table: [example_apis.py:326-344](../example_apis.py#L326-L344)
 
 ---
 
