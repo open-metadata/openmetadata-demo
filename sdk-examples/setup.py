@@ -1,7 +1,11 @@
 """
-Setup & Connection - OpenMetadata SDK Examples
+Connection Examples - OpenMetadata SDK
 
-This module provides reusable connection utilities for OpenMetadata SDK examples.
+This file demonstrates different connection methods for OpenMetadata SDK.
+
+NOTE: This file is for REFERENCE ONLY. Other example files (services.py,
+entities.py, etc.) are self-contained and do NOT import from this file.
+Each example file duplicates the connection setup for easy copy-paste usage.
 
 SDK References:
 - API Module: metadata.ingestion.ometa.ometa_api.OpenMetadata
@@ -12,14 +16,11 @@ SDK References:
 Source Reference:
 - Original example_apis.py lines 1-97
 
-Required Configuration:
-- SERVER_URL: OpenMetadata server API endpoint (default: http://localhost:8585/api)
-- JWT_TOKEN: Valid JWT token from OpenMetadata (get from Settings > Bots > ingestion-bot)
-
-Example Use Cases:
-1. Create authenticated client for API operations
-2. Verify server connectivity with health check
-3. Centralize connection configuration for all examples
+This file shows:
+1. Basic JWT authentication (most common)
+2. Custom authentication providers (OAuth, LDAP, etc.)
+3. Health check patterns
+4. Connection troubleshooting
 """
 
 from metadata.ingestion.ometa.ometa_api import OpenMetadata

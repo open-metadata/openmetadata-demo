@@ -16,10 +16,59 @@ Source Reference:
 - Messaging Service: example_apis.py lines 153-172
 
 All examples are working, tested solutions from the original codebase.
+
+USAGE:
+1. Update SERVER_URL and JWT_TOKEN below
+2. Run: python services.py
 """
 
 import json
-from setup import get_metadata_client
+
+# ============================================================================
+# CONNECTION SETUP
+# ============================================================================
+# NOTE: Each example file is self-contained. Update these values for your
+# OpenMetadata instance, then run this file directly.
+
+from metadata.ingestion.ometa.ometa_api import OpenMetadata
+from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
+    OpenMetadataConnection,
+    AuthProvider,
+)
+from metadata.generated.schema.security.client.openMetadataJWTClientConfig import (
+    OpenMetadataJWTClientConfig,
+)
+
+# TODO: Update these values for your OpenMetadata instance
+SERVER_URL = "http://localhost:8585/api"
+JWT_TOKEN = "eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJvcGVuLW1ldGFkYXRhLm9yZyIsInN1YiI6ImluZ2VzdGlvbi1ib3QiLCJlbWFpbCI6ImluZ2VzdGlvbi1ib3RAb3Blbm1ldGFkYXRhLm9yZyIsImlzQm90Ijp0cnVlLCJ0b2tlblR5cGUiOiJCT1QiLCJpYXQiOjE2OTU0MDkwNDEsImV4cCI6bnVsbH0.G2cmKdidr_lQd8nNy7i_7X3mSqXJsX4cFk0PqRoN0vJwsIiDhtTc7fd5Fi6NzT5ZxTR9BS2jRuaTMJ0dbBXwNaUZM_VDupGA_foSqfktjr6Ho-YRnmP_z6095lPJG9wE6hcWu6oXPWTR-zys0j0SkrUBFjSmYk-f31KW9jINFtR55MMwqe7weCsZkoJJ5O9w7vku4l6MeOfXVEfkVWCZaBKi93EYBlk9GBcV5HkVhjq2sujYtYUw9muwzl_4jiEZwFkeV7TkV8OBFowaT0L0SRyvuVq3hs27gdLLZBPrN3kiLN8JaGnVE2_CFOSdcrFiQVncyFHihY9C_3f113H-Ag"
+
+# How to get JWT token:
+# 1. Open OpenMetadata UI
+# 2. Go to Settings > Bots > ingestion-bot
+# 3. Copy the JWT token
+# Or create a new bot and use its token
+
+
+def get_metadata_client():
+    """
+    Create authenticated OpenMetadata client.
+
+    Returns:
+        OpenMetadata: Authenticated client instance
+    """
+    security_config = OpenMetadataJWTClientConfig(jwtToken=JWT_TOKEN)
+    server_config = OpenMetadataConnection(
+        hostPort=SERVER_URL,
+        authProvider=AuthProvider.openmetadata,
+        securityConfig=security_config,
+    )
+    return OpenMetadata(server_config)
+
+
+# ============================================================================
+# SERVICE CREATION EXAMPLES
+# ============================================================================
 
 # Service creation imports
 from metadata.generated.schema.api.services.createDatabaseService import (

@@ -12,30 +12,47 @@ This directory contains lean, efficient examples demonstrating all major operati
 - **OpenMetadata Server**: Running instance (default: `http://localhost:8585/api`)
 - **Python**: 3.8 or higher
 - **SDK Installation**: `pip install openmetadata-ingestion`
-- **Authentication**: JWT token or configured auth provider
+- **Authentication**: JWT token (get from Settings > Bots > ingestion-bot)
 
 ### Running Examples
 
+**Each example file is self-contained** - no dependencies between files!
+
 ```bash
-# 1. Configure connection in setup.py (update server URL and JWT token)
-# 2. Run any example file:
-python setup.py              # Test connection
+# 1. Open any example file (e.g., services.py)
+# 2. Update SERVER_URL and JWT_TOKEN at the top of the file
+# 3. Run it directly:
+
 python services.py           # Service creation examples
-python entities.py           # Entity creation examples
-python metadata_ops.py       # Metadata operations
-python lineage.py            # Lineage examples
-python queries.py            # Read/query operations
-python advanced.py           # Advanced patterns
+python entities.py           # Entity creation examples (requires services)
+python metadata_ops.py       # Metadata operations (coming in Phase 2)
+python lineage.py            # Lineage examples (coming in Phase 2)
+python queries.py            # Read/query operations (coming in Phase 3)
+python advanced.py           # Advanced patterns (coming in Phase 3)
+
+# Optional: Test connection patterns
+python setup.py              # Connection reference (JWT, OAuth, etc.)
 ```
+
+### Copy-Paste Friendly
+
+Want to use an example in your code? Simply:
+1. Copy the entire file or specific function
+2. Update `SERVER_URL` and `JWT_TOKEN` variables
+3. Run it - no external dependencies!
 
 ## Index
 
-### 1. Setup & Connection (`setup.py`)
-Basic connection utilities and health checks.
+### 1. Connection Reference (`setup.py`)
+Reference examples for different connection methods.
 
-**Functions:**
-- `get_metadata_client()` - Create authenticated OpenMetadata client
-- `health_check()` - Verify server connectivity
+**NOTE**: This file is for reference only. Other files are self-contained and do NOT import from setup.py.
+
+**Examples:**
+- Basic JWT authentication (most common)
+- Custom authentication providers (OAuth, Google, Okta, etc.)
+- Health check patterns
+- Connection troubleshooting
 
 **SDK References:**
 - `metadata.ingestion.ometa.ometa_api.OpenMetadata`
