@@ -27,8 +27,8 @@ python services.py           # Service creation examples
 python entities.py           # Entity creation examples (requires services)
 python metadata_ops.py       # Metadata operations (tags, descriptions, owners, domains)
 python lineage.py            # Lineage examples (data flow tracking)
-python queries.py            # Read/query operations (coming in Phase 3)
-python advanced.py           # Advanced patterns (coming in Phase 3)
+python queries.py            # Read/query operations (get, list, search)
+python advanced.py           # Advanced patterns (bulk ops, migrations, best practices)
 
 # Optional: Test connection patterns
 python setup.py              # Connection reference (JWT, OAuth, etc.)
@@ -166,37 +166,54 @@ Examples for reading and querying entities.
 
 | Example | SDK API | Line | Required Args |
 |---------|---------|------|---------------|
-| **6.1 Get by Name** | `metadata.get_by_name()` | ~25 | `entity`, `fqn`, optional `fields` |
-| **6.2 Get by ID** | `metadata.get_by_id()` | ~50 | `entity`, `id`, optional `fields` |
-| **6.3 List All Entities** | `metadata.list_all_entities()` | ~75 | `entity`, optional `fields` |
-| **6.4 List with Filters** | `metadata.list_entities()` | ~105 | `entity`, optional `params`, `fields` |
-| **6.5 Health Check** | `metadata.health_check()` | ~130 | None |
+| **6.1 Get by Name (FQN)** | `metadata.get_by_name()` | ~100 | `entity`, `fqn`, optional `fields` (for performance) |
+| **6.2 Get by ID (UUID)** | `metadata.get_by_id()` | ~180 | `entity`, `id`, optional `fields` |
+| **6.3 List All Entities** | `metadata.list_all_entities()` | ~230 | `entity`, optional `fields` (generator/iterator) |
+| **6.4 List with Filters** | `metadata.list_entities()` | ~280 | `entity`, optional `params` (glossary filter), `fields` |
+| **6.5 Health Check** | `metadata.health_check()` | ~350 | None (monitoring, pre-flight checks) |
+| **6.6 Query Patterns & Best Practices** | Various | ~410 | Safe retrieval, error handling, batch processing |
 
 **SDK Module:** `metadata.ingestion.ometa.ometa_api.OpenMetadata`
 
+**Key Patterns:**
+- Field filtering for performance optimization
+- Error handling for missing entities
+- Iterator pattern for memory-efficient large datasets
+- Conditional queries and batch processing
+
 **Source Reference:**
-- Get by Name: [example_apis.py:440-441](../example_apis.py#L440-L441)
+- Get by Name: [example_apis.py:264, 440-441](../example_apis.py#L264)
 - List All: [example_apis.py:443-452](../example_apis.py#L443-L452)
-- List with Params: [example_apis.py:458-469](../example_apis.py#L458-L469)
+- List with Params: [example_apis.py:287-288, 458-469](../example_apis.py#L287-L288)
 
 ---
 
 ### 7. Advanced (`advanced.py`)
-Advanced patterns for bulk operations and complex updates.
+Advanced patterns for production-ready implementations.
 
 | Example | SDK API | Line | Required Args |
 |---------|---------|------|---------------|
-| **7.1 Bulk Entity Updates** | `metadata.create_or_update()` in loop | ~30 | List of entity requests |
-| **7.2 Grouped PATCH Operations** | `metadata.patch()` | ~70 | Multiple field updates in single entity |
-| **7.3 Team User Migration** | `metadata.patch()` on teams | ~115 | Source team, destination team, user list |
+| **7.1 Bulk Entity Creation** | `metadata.create_or_update()` in loop | ~110 | List of entity definitions, error handling per entity |
+| **7.2 Bulk Updates with Retry** | `metadata.patch()` with retry logic | ~190 | Entities to update, max retries, exponential backoff |
+| **7.3 Team User Migration** | `metadata.patch()` on teams | ~260 | Source team ID, dest team ID, user names to migrate |
+| **7.4 Error Handling Patterns** | Various | ~390 | Input validation, specific exceptions, graceful degradation |
+| **7.5 Production Best Practices** | Various | ~500 | Connection reuse, health checks, field filtering, monitoring |
 
 **SDK Modules:**
 - `metadata.ingestion.ometa.ometa_api.OpenMetadata`
 - `metadata.generated.schema.entity.teams.team.Team`
+- `copy.deepcopy` for safe entity modification
+
+**Production Patterns:**
+- **Idempotency**: Use `create_or_update()` for safe re-runs
+- **Retry Logic**: Exponential backoff for transient failures
+- **Error Handling**: Per-entity error tracking, don't fail entire batch
+- **Performance**: Field filtering, connection reuse, batch operations
+- **Monitoring**: Health checks, success rate tracking, structured logging
 
 **Source Reference:**
-- Grouped Patches: [example_apis.py:575-593](../example_apis.py#L575-L593)
 - Team Migration: [example_apis.py:596-622](../example_apis.py#L596-L622)
+- Grouped Patches: [example_apis.py:575-593](../example_apis.py#L575-L593)
 
 ---
 
