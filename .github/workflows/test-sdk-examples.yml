@@ -15,13 +15,11 @@ on:
 
 jobs:
   test:
-    name: Test SDK Examples (Python ${{ matrix.python-version }})
+    name: Test SDK Examples (Python 3.10)
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -29,10 +27,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
           cache: 'pip'
 
       - name: Install dependencies
@@ -50,8 +48,18 @@ jobs:
         with:
           files: ./sdk-examples/coverage.xml
           flags: sdk-examples
-          name: sdk-examples-python-${{ matrix.python-version }}
+          name: sdk-examples-python-3.10
           fail_ci_if_error: false
+
+      - name: Coverage comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        if: github.event_name == 'pull_request'
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 100
+          MINIMUM_ORANGE: 90
+          ANNOTATE_MISSING_LINES: true
+          ANNOTATION_TYPE: warning
 
       - name: Generate coverage report
         if: always()
