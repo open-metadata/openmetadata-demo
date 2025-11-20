@@ -15,6 +15,11 @@ coverage>=7.3.0
 # Using latest stable release for all new features and bug fixes
 openmetadata-ingestion>=1.10.0
 
-# Additional SDK dependencies (sometimes not auto-installed)
+# Core SDK dependencies (ensuring they're installed)
 jsonpatch>=1.32
 email-validator>=2.0.0
+sqlparse>=0.4.0
+chardet>=5.0.0
+pydantic>=2.0.0
+requests>=2.31.0
+sqlalchemy>=2.0.0
