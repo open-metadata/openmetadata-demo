@@ -10,7 +10,7 @@ This directory contains lean, efficient examples demonstrating all major operati
 
 ### Prerequisites
 - **OpenMetadata Server**: Running instance (default: `http://localhost:8585/api`)
-- **Python**: 3.8 or higher
+- **Python**: 3.10 (required for development and CI/CD)
 - **SDK Installation**: `pip install openmetadata-ingestion`
 - **Authentication**: JWT token (get from Settings > Bots > ingestion-bot)
 
@@ -266,8 +266,8 @@ pytest tests/ --cov=. --cov-report=term-missing
 ### CI/CD
 
 Tests run automatically on every PR that modifies `sdk-examples/**`:
-- **Python Versions**: 3.8, 3.9, 3.10, 3.11
-- **Test Coverage**: Imports, models, example functions
+- **Python Version**: 3.10 only
+- **Test Coverage**: Imports, models, example functions (with automated coverage comments on PRs)
 - **Linting**: black, isort, ruff
 - **Validation**: Syntax checks, import verification
 

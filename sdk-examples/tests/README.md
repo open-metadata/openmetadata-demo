@@ -107,9 +107,10 @@ Tests run automatically on:
 Location: `.github/workflows/test-sdk-examples.yml`
 
 The workflow:
-1. **Tests** - Runs on Python 3.8, 3.9, 3.10, 3.11
-2. **Lint** - Checks formatting with black, isort, ruff
-3. **Validate** - Verifies syntax and imports
+1. **Tests** - Runs on Python 3.10 only
+2. **Coverage Comments** - Posts coverage reports on PRs with annotations
+3. **Lint** - Checks formatting with black, isort, ruff
+4. **Validate** - Verifies syntax and imports
 
 ### Viewing Test Results
 
