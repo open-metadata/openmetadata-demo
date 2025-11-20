@@ -232,6 +232,59 @@ Advanced patterns for production-ready implementations.
 
 ---
 
+## Testing & Validation
+
+All SDK examples are thoroughly tested to ensure they work correctly.
+
+### Test Suite
+
+Location: `tests/`
+
+The test suite validates:
+- ✅ All imports work correctly
+- ✅ All pydantic models can be instantiated
+- ✅ All example functions execute without errors
+- ✅ SDK dependencies are available
+- ✅ No syntax or runtime errors
+
+### Running Tests
+
+```bash
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_imports.py -v
+
+# Run with coverage
+pytest tests/ --cov=. --cov-report=term-missing
+```
+
+### CI/CD
+
+Tests run automatically on every PR that modifies `sdk-examples/**`:
+- **Python Versions**: 3.8, 3.9, 3.10, 3.11
+- **Test Coverage**: Imports, models, example functions
+- **Linting**: black, isort, ruff
+- **Validation**: Syntax checks, import verification
+
+See `.github/workflows/test-sdk-examples.yml` for full CI configuration.
+
+### Test Coverage Details
+
+| Test File | Coverage | Description |
+|-----------|----------|-------------|
+| `test_imports.py` | All 7 example files + SDK modules | Validates imports work |
+| `test_models.py` | Service, entity, type, lineage models | Tests pydantic model creation |
+| `test_examples.py` | All example functions | Tests function execution (mocked) |
+
+For detailed testing documentation, see [`tests/README.md`](tests/README.md).
+
+---
+
 ## Best Practices
 
 ### 1. No Hallucinations

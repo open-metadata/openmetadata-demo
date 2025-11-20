@@ -1,0 +1,15 @@
+# Test Dependencies for SDK Examples
+
+# Core testing framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+
+# Mocking and testing utilities
+unittest-mock>=1.5.0
+
+# Code coverage reporting
+coverage>=7.3.0
+
+# OpenMetadata SDK (same as examples)
+openmetadata-ingestion>=1.3.0
