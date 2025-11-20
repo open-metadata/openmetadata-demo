@@ -147,28 +147,106 @@ pytest tests/test_models.py::test_database_service -v
 
 ### Python Style Guide
 
-We follow **PEP 8** style guidelines:
+We follow **PEP 8** style guidelines with modern tooling:
 
 - **Indentation**: 4 spaces (no tabs)
-- **Line Length**: Maximum 88 characters (Black default)
-- **Imports**: Organized with `isort`
-- **Linting**: Checked with `ruff`
+- **Line Length**: Maximum 100 characters (configured in `pyproject.toml`)
+- **Imports**: Organized with `isort` (black-compatible profile)
+- **Linting**: Checked with `ruff` (replaces flake8, pylint, etc.)
+- **Type Hints**: Checked with `mypy` (informational, not required)
+- **Formatting**: Auto-formatted with `black`
+
+### Quick Start
+
+Use the Makefile for common tasks:
+
+```bash
+# Install all development dependencies
+cd sdk-examples
+make install
+
+# Format code automatically
+make format
+
+# Check code quality (lint + type-check)
+make lint
+make type-check
+
+# Run all checks
+make check
+
+# Run tests
+make test
+make test-cov  # with coverage
+
+# Run everything (format + lint + type-check + test)
+make all
+```
 
 ### Formatting Tools
 
+All configuration is in `pyproject.toml`. Tools automatically detect and use this configuration.
+
 ```bash
-# Install formatting tools
-pip install black isort ruff
+# Auto-format code with Black
+black *.py tests/*.py
 
-# Format code with Black
-black sdk-examples/*.py sdk-examples/tests/*.py
+# Sort imports with isort
+isort *.py tests/*.py
 
-# Sort imports
-isort sdk-examples/*.py sdk-examples/tests/*.py
+# Lint with ruff (fast linter)
+ruff check *.py tests/*.py
+ruff check --fix *.py tests/*.py  # auto-fix issues
 
-# Lint with ruff
-ruff check sdk-examples/*.py sdk-examples/tests/*.py
+# Type check with mypy
+mypy *.py --ignore-missing-imports
 ```
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to automatically check code before commits:
+
+```bash
+cd sdk-examples
+make pre-commit
+# or
+pre-commit install
+```
+
+This will run on every commit:
+- **black**: Code formatting
+- **isort**: Import sorting
+- **ruff**: Linting with auto-fix
+- **mypy**: Type checking
+- **trailing-whitespace**: Remove trailing whitespace
+- **end-of-file-fixer**: Ensure files end with newline
+- **check-yaml/json/toml**: Validate config files
+- **detect-private-key**: Prevent committing secrets
+
+### Environment Variables
+
+Use `.env` files for configuration (never commit these!):
+
+1. **Copy template**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Update with your values**:
+   ```bash
+   OPENMETADATA_SERVER_URL=http://localhost:8585/api
+   OPENMETADATA_JWT_TOKEN=your-actual-token
+   ```
+
+3. **Load in Python**:
+   ```python
+   import os
+   from dotenv import load_dotenv
+
+   load_dotenv()
+   SERVER_URL = os.getenv("OPENMETADATA_SERVER_URL")
+   JWT_TOKEN = os.getenv("OPENMETADATA_JWT_TOKEN")
+   ```
 
 ### Documentation Standards
 

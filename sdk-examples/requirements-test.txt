@@ -11,6 +11,17 @@ pytest-mock>=3.11.1
 # Code coverage reporting
 coverage>=7.3.0
 
+# Code quality tools
+black>=24.3.0
+isort>=5.13.0
+ruff>=0.3.0
+mypy>=1.9.0
+pre-commit>=3.6.0
+
+# Type stubs
+types-requests>=2.31.0
+types-PyYAML>=6.0.0
+
 # OpenMetadata SDK (latest version)
 # Using latest stable release for all new features and bug fixes
 openmetadata-ingestion>=1.10.0

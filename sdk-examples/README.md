@@ -234,7 +234,44 @@ Advanced patterns for production-ready implementations.
 
 ## Testing & Validation
 
-All SDK examples are thoroughly tested to ensure they work correctly.
+All SDK examples are thoroughly tested to ensure they work correctly with comprehensive code quality checks.
+
+### Quick Start for Developers
+
+```bash
+# Install all dependencies (including development tools)
+make install
+
+# Run all checks (format, lint, type-check, test)
+make all
+
+# Or run individual commands:
+make format      # Format code with black and isort
+make lint        # Check code quality with ruff
+make type-check  # Run type checking with mypy
+make test        # Run tests with pytest
+make test-cov    # Run tests with coverage report
+```
+
+### Environment Setup
+
+1. **Copy environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Update `.env` with your OpenMetadata credentials:**
+   ```bash
+   OPENMETADATA_SERVER_URL=http://localhost:8585/api
+   OPENMETADATA_JWT_TOKEN=your-actual-jwt-token
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   make install
+   # or
+   pip install -r requirements-test.txt
+   ```
 
 ### Test Suite
 
@@ -246,29 +283,77 @@ The test suite validates:
 - ✅ All example functions execute without errors
 - ✅ SDK dependencies are available
 - ✅ No syntax or runtime errors
+- ✅ Pydantic v2 compatibility
 
 ### Running Tests
 
 ```bash
-# Install test dependencies
-pip install -r requirements-test.txt
-
 # Run all tests
+make test
+# or
 pytest tests/ -v
 
 # Run specific test file
-pytest tests/test_imports.py -v
+pytest tests/test_models.py -v
 
 # Run with coverage
-pytest tests/ --cov=. --cov-report=term-missing
+make test-cov
+# or
+pytest tests/ --cov=. --cov-report=term-missing --cov-report=html
 ```
+
+### Code Quality Tools
+
+This project uses industry-standard tools for code quality:
+
+- **black**: Code formatting (line length: 100)
+- **isort**: Import sorting (black-compatible profile)
+- **ruff**: Fast Python linter (replaces flake8, pylint, etc.)
+- **mypy**: Static type checking
+- **pre-commit**: Git hooks for automated checks
+
+Configuration is in `pyproject.toml`.
+
+### Linting and Formatting
+
+```bash
+# Check code style (without changes)
+make lint
+
+# Auto-format code
+make format
+
+# Run type checking
+make type-check
+
+# Run all quality checks
+make check
+```
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to automatically run checks before each commit:
+
+```bash
+make pre-commit
+# or
+pre-commit install
+```
+
+This will run:
+- Code formatting (black, isort)
+- Linting (ruff)
+- YAML/JSON validation
+- Trailing whitespace removal
+- And more...
 
 ### CI/CD
 
 Tests run automatically on every PR that modifies `sdk-examples/**`:
 - **Python Version**: 3.10 only
 - **Test Coverage**: Imports, models, example functions (with automated coverage comments on PRs)
-- **Linting**: black, isort, ruff
+- **Linting**: black, isort, ruff (fail on errors)
+- **Type Checking**: mypy (informational)
 - **Validation**: Syntax checks, import verification
 
 See `.github/workflows/test-sdk-examples.yml` for full CI configuration.
