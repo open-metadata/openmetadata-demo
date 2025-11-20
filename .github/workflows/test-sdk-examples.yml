@@ -35,8 +35,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r sdk-examples/requirements-test.txt
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r sdk-examples/requirements-test.txt
 
       - name: Run tests with pytest
         working-directory: sdk-examples
@@ -113,8 +113,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r sdk-examples/requirements-test.txt
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r sdk-examples/requirements-test.txt
 
       - name: Validate Python syntax
         run: |
