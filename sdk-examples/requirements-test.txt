@@ -6,7 +6,7 @@ pytest-cov>=4.1.0
 pytest-mock>=3.11.1
 
 # Mocking and testing utilities
-unittest-mock>=1.5.0
+# Note: unittest.mock is built into Python 3.3+
 
 # Code coverage reporting
 coverage>=7.3.0
