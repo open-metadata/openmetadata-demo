@@ -57,7 +57,7 @@ class TestEntityModels:
         )
 
         assert database.name.root == "test-db"
-        assert database.service == "test-service"
+        assert database.service.root == "test-service"
 
     def test_create_database_schema_request(self):
         """Test DatabaseSchema creation model."""
@@ -67,7 +67,7 @@ class TestEntityModels:
         )
 
         assert schema.name.root == "test-schema"
-        assert schema.database == "test-service.test-db"
+        assert schema.database.root == "test-service.test-db"
 
     def test_create_table_request_minimal(self):
         """Test Table creation model with minimal fields."""
@@ -80,7 +80,7 @@ class TestEntityModels:
         )
 
         assert table.name.root == "test-table"
-        assert table.databaseSchema == "test-service.test-db.test-schema"
+        assert table.databaseSchema.root == "test-service.test-db.test-schema"
         assert len(table.columns) == 1
         assert table.columns[0].name == "id"
         assert table.columns[0].dataType == DataType.BIGINT
@@ -131,7 +131,7 @@ class TestTypeModels:
             type="table"
         )
 
-        assert ref.id == "550e8400-e29b-41d4-a716-446655440000"
+        assert str(ref.id.root) == "550e8400-e29b-41d4-a716-446655440000"
         assert ref.type == "table"
 
     def test_markdown_creation(self):
@@ -151,9 +151,9 @@ class TestLineageModels:
             toEntity=EntityReference(id="550e8400-e29b-41d4-a716-446655440002", type="pipeline")
         )
 
-        assert edge.fromEntity.id == "550e8400-e29b-41d4-a716-446655440001"
+        assert str(edge.fromEntity.id.root) == "550e8400-e29b-41d4-a716-446655440001"
         assert edge.fromEntity.type == "table"
-        assert edge.toEntity.id == "550e8400-e29b-41d4-a716-446655440002"
+        assert str(edge.toEntity.id.root) == "550e8400-e29b-41d4-a716-446655440002"
         assert edge.toEntity.type == "pipeline"
 
     def test_add_lineage_request(self):
@@ -166,7 +166,7 @@ class TestLineageModels:
         )
 
         assert lineage_request.edge is not None
-        assert lineage_request.edge.fromEntity.id == "550e8400-e29b-41d4-a716-446655440001"
+        assert str(lineage_request.edge.fromEntity.id.root) == "550e8400-e29b-41d4-a716-446655440001"
 
 
 class TestModelValidation:

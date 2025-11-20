@@ -57,8 +57,22 @@ def mock_metadata_client():
 
     mock_client.get_by_name.side_effect = mock_get_by_name
 
-    # Mock get_by_id
-    mock_client.get_by_id.side_effect = mock_get_by_name
+    # Mock get_by_id (separate function to handle 'id' parameter)
+    def mock_get_by_id(entity, id, fields=None):
+        mock_entity = MagicMock()
+        mock_entity.id = Mock()
+        mock_entity.id.root = id if isinstance(id, str) else "550e8400-e29b-41d4-a716-446655440000"
+        mock_entity.name = Mock()
+        mock_entity.name.root = 'mock-name'
+        mock_entity.fullyQualifiedName = Mock()
+        mock_entity.fullyQualifiedName.root = 'mock.fqn'
+        mock_entity.columns = []
+        mock_entity.owners = Mock()
+        mock_entity.owners.root = []
+        mock_entity.tags = []
+        return mock_entity
+
+    mock_client.get_by_id.side_effect = mock_get_by_id
 
     # Mock list_all_entities (returns empty generator)
     mock_client.list_all_entities.return_value = iter([])
