@@ -41,7 +41,7 @@ class TestServiceModels:
             )
         )
 
-        assert service.name == "test-service"
+        assert service.name.root == "test-service"
         assert service.serviceType == DatabaseServiceType.Snowflake
         assert service.connection is not None
 
@@ -56,7 +56,7 @@ class TestEntityModels:
             service="test-service"
         )
 
-        assert database.name == "test-db"
+        assert database.name.root == "test-db"
         assert database.service == "test-service"
 
     def test_create_database_schema_request(self):
@@ -66,7 +66,7 @@ class TestEntityModels:
             database="test-service.test-db"
         )
 
-        assert schema.name == "test-schema"
+        assert schema.name.root == "test-schema"
         assert schema.database == "test-service.test-db"
 
     def test_create_table_request_minimal(self):
@@ -79,7 +79,7 @@ class TestEntityModels:
             ]
         )
 
-        assert table.name == "test-table"
+        assert table.name.root == "test-table"
         assert table.databaseSchema == "test-service.test-db.test-schema"
         assert len(table.columns) == 1
         assert table.columns[0].name == "id"
@@ -119,7 +119,7 @@ class TestTypeModels:
             state=State.Confirmed
         )
 
-        assert tag.tagFQN.__root__ == "PII.Sensitive"
+        assert tag.tagFQN.root == "PII.Sensitive"
         assert tag.source == TagSource.Classification
         assert tag.labelType == LabelType.Manual
         assert tag.state == State.Confirmed
@@ -127,18 +127,18 @@ class TestTypeModels:
     def test_entity_reference_creation(self):
         """Test EntityReference model."""
         ref = EntityReference(
-            id="uuid-1234",
+            id="550e8400-e29b-41d4-a716-446655440000",
             type="table"
         )
 
-        assert ref.id == "uuid-1234"
+        assert ref.id == "550e8400-e29b-41d4-a716-446655440000"
         assert ref.type == "table"
 
     def test_markdown_creation(self):
         """Test Markdown model."""
         markdown = Markdown("This is a **test** description")
 
-        assert markdown.__root__ == "This is a **test** description"
+        assert markdown.root == "This is a **test** description"
 
 
 class TestLineageModels:
@@ -147,26 +147,26 @@ class TestLineageModels:
     def test_entities_edge_creation(self):
         """Test EntitiesEdge model."""
         edge = EntitiesEdge(
-            fromEntity=EntityReference(id="uuid-1", type="table"),
-            toEntity=EntityReference(id="uuid-2", type="pipeline")
+            fromEntity=EntityReference(id="550e8400-e29b-41d4-a716-446655440001", type="table"),
+            toEntity=EntityReference(id="550e8400-e29b-41d4-a716-446655440002", type="pipeline")
         )
 
-        assert edge.fromEntity.id == "uuid-1"
+        assert edge.fromEntity.id == "550e8400-e29b-41d4-a716-446655440001"
         assert edge.fromEntity.type == "table"
-        assert edge.toEntity.id == "uuid-2"
+        assert edge.toEntity.id == "550e8400-e29b-41d4-a716-446655440002"
         assert edge.toEntity.type == "pipeline"
 
     def test_add_lineage_request(self):
         """Test AddLineageRequest model."""
         lineage_request = AddLineageRequest(
             edge=EntitiesEdge(
-                fromEntity=EntityReference(id="uuid-1", type="table"),
-                toEntity=EntityReference(id="uuid-2", type="pipeline")
+                fromEntity=EntityReference(id="550e8400-e29b-41d4-a716-446655440001", type="table"),
+                toEntity=EntityReference(id="550e8400-e29b-41d4-a716-446655440002", type="pipeline")
             )
         )
 
         assert lineage_request.edge is not None
-        assert lineage_request.edge.fromEntity.id == "uuid-1"
+        assert lineage_request.edge.fromEntity.id == "550e8400-e29b-41d4-a716-446655440001"
 
 
 class TestModelValidation:

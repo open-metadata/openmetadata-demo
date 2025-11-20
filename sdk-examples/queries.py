@@ -123,10 +123,10 @@ def get_entity_by_name():
     table_fqn = "test-snowflake.test-db.test-schema.dim_orders"
     table = metadata.get_by_name(entity=Table, fqn=table_fqn)
 
-    print(f"✓ Retrieved table: {table.fullyQualifiedName.__root__}")
-    print(f"  Name: {table.name.__root__}")
+    print(f"✓ Retrieved table: {table.fullyQualifiedName.root}")
+    print(f"  Name: {table.name.root}")
     print(f"  Database: {table.database.name}")
-    print(f"  Columns: {len(table.columns.__root__)}")
+    print(f"  Columns: {len(table.columns)}")
 
     # Example 2: Get table with specific fields (more efficient)
     # Source: example_apis.py line 264 (fields=["owners"])
@@ -135,7 +135,7 @@ def get_entity_by_name():
     )
 
     print(f"\n✓ Retrieved table with specific fields:")
-    print(f"  Owners: {len(table_with_fields.owners.__root__) if table_with_fields.owners else 0}")
+    print(f"  Owners: {len(table_with_fields.owners.root) if table_with_fields.owners else 0}")
     print(f"  Tags: {len(table_with_fields.tags) if table_with_fields.tags else 0}")
 
     # Example 3: Get user by name (username before @)
@@ -143,8 +143,8 @@ def get_entity_by_name():
     user_fqn = "admin"  # For admin@openmetadata.org
     user = metadata.get_by_name(entity=User, fqn=user_fqn)
 
-    print(f"\n✓ Retrieved user: {user.fullyQualifiedName.__root__}")
-    print(f"  Email: {user.email.__root__}")
+    print(f"\n✓ Retrieved user: {user.fullyQualifiedName.root}")
+    print(f"  Email: {user.email.root}")
 
     return table
 
@@ -184,16 +184,16 @@ def get_entity_by_id():
     # First, get a table to obtain its ID
     table_fqn = "test-snowflake.test-db.test-schema.dim_orders"
     table = metadata.get_by_name(entity=Table, fqn=table_fqn)
-    table_id = table.id.__root__
+    table_id = table.id.root
 
     print(f"Table ID: {table_id}")
 
     # Get the same table by ID
     table_by_id = metadata.get_by_id(entity=Table, id=str(table_id))
 
-    print(f"\n✓ Retrieved table by ID: {table_by_id.fullyQualifiedName.__root__}")
-    print(f"  ID: {table_by_id.id.__root__}")
-    print(f"  Name: {table_by_id.name.__root__}")
+    print(f"\n✓ Retrieved table by ID: {table_by_id.fullyQualifiedName.root}")
+    print(f"  ID: {table_by_id.id.root}")
+    print(f"  Name: {table_by_id.name.root}")
 
     # Get with specific fields
     table_by_id_filtered = metadata.get_by_id(
@@ -248,7 +248,7 @@ def list_all_entities():
     # Iterate through all tables (generator pattern)
     # Source: example_apis.py lines 450-452
     for table in all_tables:
-        print(f"  - {table.fullyQualifiedName.__root__}")
+        print(f"  - {table.fullyQualifiedName.root}")
         # You can process each table here
         # Example: Check tags, update descriptions, etc.
         table_count += 1
@@ -308,7 +308,7 @@ def list_entities_with_filters():
     print(f"  Total: {len(domains_result.entities)}")
 
     for domain in domains_result.entities:
-        print(f"  - {domain.fullyQualifiedName.__root__}")
+        print(f"  - {domain.fullyQualifiedName.root}")
 
     # Example 2: List glossary terms filtered by glossary
     # Source: example_apis.py lines 463-469
@@ -318,18 +318,18 @@ def list_entities_with_filters():
     all_glossaries = metadata.list_all_entities(entity=Glossary, fields=["tags"])
 
     for glossary in all_glossaries:
-        print(f"\n  Glossary: {glossary.name.__root__}")
+        print(f"\n  Glossary: {glossary.name.root}")
 
         # List terms for this specific glossary
         terms = metadata.list_all_entities(
             entity=GlossaryTerm,
-            params={"glossary": str(glossary.id.__root__)},  # Filter parameter
+            params={"glossary": str(glossary.id.root)},  # Filter parameter
             fields=["children", "owner", "parent"],
         )
 
         term_count = 0
         for term in terms:
-            print(f"    - {term.fullyQualifiedName.__root__}")
+            print(f"    - {term.fullyQualifiedName.root}")
             term_count += 1
 
             # Limit output
@@ -437,7 +437,7 @@ def query_patterns_and_best_practices():
             entity=Table, fqn="test-snowflake.test-db.test-schema.dim_orders"
         )
         results["table_exists"] = True
-        print(f"  Table found: {table.name.__root__}")
+        print(f"  Table found: {table.name.root}")
     except Exception as e:
         results["table_exists"] = False
         print(f"  Table not found: {e}")
@@ -449,7 +449,7 @@ def query_patterns_and_best_practices():
         fqn="test-snowflake.test-db.test-schema.dim_orders",
         fields=["name"],  # Only fetch name field
     )
-    print(f"  Retrieved with minimal fields: {table_minimal.name.__root__}")
+    print(f"  Retrieved with minimal fields: {table_minimal.name.root}")
     results["minimal_fields"] = True
 
     # Pattern 3: Batch processing with pagination
@@ -460,7 +460,7 @@ def query_patterns_and_best_practices():
     for table in metadata.list_all_entities(entity=Table, fields=["name"]):
         # Process each table
         processed += 1
-        print(f"  Processing: {table.name.__root__}")
+        print(f"  Processing: {table.name.root}")
 
         # Stop after batch_size for demo
         if processed >= batch_size:

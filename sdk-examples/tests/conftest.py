@@ -31,11 +31,11 @@ def mock_metadata_client():
         # Add mock ID and FQN
         mock_entity = MagicMock()
         mock_entity.id = Mock()
-        mock_entity.id.__root__ = "mock-uuid-1234"
+        mock_entity.id.root = "550e8400-e29b-41d4-a716-446655440000"
         mock_entity.name = Mock()
-        mock_entity.name.__root__ = getattr(data, 'name', 'mock-name')
+        mock_entity.name.root = getattr(data, 'name', 'mock-name')
         mock_entity.fullyQualifiedName = Mock()
-        mock_entity.fullyQualifiedName.__root__ = f"mock.fqn.{getattr(data, 'name', 'entity')}"
+        mock_entity.fullyQualifiedName.root = f"mock.fqn.{getattr(data, 'name', 'entity')}"
         return mock_entity
 
     mock_client.create_or_update.side_effect = mock_create_or_update
@@ -44,15 +44,14 @@ def mock_metadata_client():
     def mock_get_by_name(entity, fqn, fields=None):
         mock_entity = MagicMock()
         mock_entity.id = Mock()
-        mock_entity.id.__root__ = "mock-uuid-1234"
+        mock_entity.id.root = "550e8400-e29b-41d4-a716-446655440000"
         mock_entity.name = Mock()
-        mock_entity.name.__root__ = fqn.split('.')[-1]
+        mock_entity.name.root = fqn.split('.')[-1] if isinstance(fqn, str) else 'mock-name'
         mock_entity.fullyQualifiedName = Mock()
-        mock_entity.fullyQualifiedName.__root__ = fqn
-        mock_entity.columns = Mock()
-        mock_entity.columns.__root__ = []
+        mock_entity.fullyQualifiedName.root = fqn if isinstance(fqn, str) else 'mock.fqn'
+        mock_entity.columns = []
         mock_entity.owners = Mock()
-        mock_entity.owners.__root__ = []
+        mock_entity.owners.root = []
         mock_entity.tags = []
         return mock_entity
 

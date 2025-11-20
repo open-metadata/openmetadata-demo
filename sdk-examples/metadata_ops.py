@@ -149,7 +149,7 @@ def add_table_level_tags():
         operation=PatchOperation.ADD,  # ADD or REMOVE
     )
 
-    print(f"✓ Added tag {tag_to_add.tagFQN.__root__} to table: {table_fqn}")
+    print(f"✓ Added tag {tag_to_add.tagFQN.root} to table: {table_fqn}")
 
     # Fetch updated entity to verify
     updated_table = metadata.get_by_name(entity=Table, fqn=table_fqn, fields=["tags"])
@@ -406,7 +406,7 @@ def assign_domain_to_table():
         # Source: example_apis.py line 290
         metadata.patch_domain(entity=table_entity, domain=fetch_domain)
 
-        print(f"✓ Assigned domain '{fetch_domain.name.__root__}' to table: {table_fqn}")
+        print(f"✓ Assigned domain '{fetch_domain.name.root}' to table: {table_fqn}")
 
         return table_entity, fetch_domain
     else:
@@ -454,18 +454,18 @@ def list_glossaries_and_terms():
     # Iterate through glossaries and fetch their terms
     # Source: example_apis.py lines 461-469
     for glossary in all_glossaries:
-        print(f"\n  Glossary: {glossary.name.__root__}")
+        print(f"\n  Glossary: {glossary.name.root}")
 
         # List all terms for this glossary
         children = metadata.list_all_entities(
             entity=GlossaryTerm,
-            params={"glossary": str(glossary.id.__root__)},  # Filter by glossary ID
+            params={"glossary": str(glossary.id.root)},  # Filter by glossary ID
             fields=["children", "owner", "parent"],
         )
 
         # Print terms
         for child in children:
-            print(f"    - Term: {child.fullyQualifiedName.__root__}")
+            print(f"    - Term: {child.fullyQualifiedName.root}")
 
     return all_glossaries
 

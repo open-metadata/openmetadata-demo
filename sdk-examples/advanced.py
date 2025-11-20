@@ -171,7 +171,7 @@ def bulk_create_tables():
             created_table = metadata.create_or_update(table_request)
 
             stats["created"] += 1
-            print(f"  ✓ Created: {created_table.fullyQualifiedName.__root__}")
+            print(f"  ✓ Created: {created_table.fullyQualifiedName.root}")
 
         except Exception as e:
             stats["failed"] += 1
@@ -440,7 +440,7 @@ def error_handling_patterns():
     try:
         # Attempt to get entity
         table = metadata.get_by_name(entity=Table, fqn=test_fqn)
-        print(f"  ✓ Retrieved: {table.name.__root__}")
+        print(f"  ✓ Retrieved: {table.name.root}")
         results["successes"] += 1
 
     except ValueError as e:

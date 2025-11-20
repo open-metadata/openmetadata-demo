@@ -153,9 +153,9 @@ def create_database_service_snowflake():
     # Source: example_apis.py line 115
     service_entity = metadata.create_or_update(data=create_service)
 
-    print(f"✓ Created Database Service: {service_entity.name.__root__}")
+    print(f"✓ Created Database Service: {service_entity.name.root}")
     print(f"  Type: {service_entity.serviceType.value}")
-    print(f"  ID: {service_entity.id.__root__}")
+    print(f"  ID: {service_entity.id.root}")
 
     return service_entity
 
@@ -214,9 +214,9 @@ def create_storage_service_s3():
     # Source: example_apis.py line 128
     storage_service_entity = metadata.create_or_update(data=create_storage_service_entity)
 
-    print(f"✓ Created Storage Service: {storage_service_entity.name.__root__}")
+    print(f"✓ Created Storage Service: {storage_service_entity.name.root}")
     print(f"  Type: {storage_service_entity.serviceType.value}")
-    print(f"  ID: {storage_service_entity.id.__root__}")
+    print(f"  ID: {storage_service_entity.id.root}")
 
     return storage_service_entity
 
@@ -282,9 +282,9 @@ def create_pipeline_service_airflow():
     # Source: example_apis.py line 151
     pipeline_service_entity = metadata.create_or_update(create_pipeline_service_entity)
 
-    print(f"✓ Created Pipeline Service: {pipeline_service_entity.name.__root__}")
+    print(f"✓ Created Pipeline Service: {pipeline_service_entity.name.root}")
     print(f"  Type: {pipeline_service_entity.serviceType.value}")
-    print(f"  ID: {pipeline_service_entity.id.__root__}")
+    print(f"  ID: {pipeline_service_entity.id.root}")
 
     return pipeline_service_entity
 
@@ -349,9 +349,9 @@ def create_messaging_service_kafka():
     # Source: example_apis.py line 172
     messaging_service_entity = metadata.create_or_update(create_messaging_service_entity)
 
-    print(f"✓ Created Messaging Service: {messaging_service_entity.name.__root__}")
+    print(f"✓ Created Messaging Service: {messaging_service_entity.name.root}")
     print(f"  Type: {messaging_service_entity.serviceType.value}")
-    print(f"  ID: {messaging_service_entity.id.__root__}")
+    print(f"  ID: {messaging_service_entity.id.root}")
 
     return messaging_service_entity
 
@@ -390,7 +390,7 @@ def list_database_services():
 
     print(f"\n✓ Found {len(services)} Database Services:")
     for service in services:
-        print(f"  - {service.name.__root__} ({service.serviceType.value})")
+        print(f"  - {service.name.root} ({service.serviceType.value})")
 
     return services
 

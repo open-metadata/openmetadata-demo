@@ -158,7 +158,7 @@ def create_database_schema_table_hierarchy():
     # Source: example_apis.py line 181
     db_entity = metadata.create_or_update(create_db)
 
-    print(f"✓ Created Database: {db_entity.fullyQualifiedName.__root__}")
+    print(f"✓ Created Database: {db_entity.fullyQualifiedName.root}")
 
     # Step 2: Create Database Schema
     # Source: example_apis.py lines 184-186
@@ -171,7 +171,7 @@ def create_database_schema_table_hierarchy():
     # Source: example_apis.py line 188
     schema_entity = metadata.create_or_update(data=create_schema)
 
-    print(f"✓ Created Schema: {schema_entity.fullyQualifiedName.__root__}")
+    print(f"✓ Created Schema: {schema_entity.fullyQualifiedName.root}")
 
     # Step 3: Create Table with columns
     # Source: example_apis.py lines 190-194
@@ -187,8 +187,8 @@ def create_database_schema_table_hierarchy():
     # Source: example_apis.py line 196
     table_entity = metadata.create_or_update(create_table)
 
-    print(f"✓ Created Table: {table_entity.fullyQualifiedName.__root__}")
-    print(f"  Columns: {len(table_entity.columns.__root__)} column(s)")
+    print(f"✓ Created Table: {table_entity.fullyQualifiedName.root}")
+    print(f"  Columns: {len(table_entity.columns)} column(s)")
 
     return db_entity, schema_entity, table_entity
 
@@ -245,8 +245,8 @@ def create_tables_for_lineage():
     table_a_entity = metadata.create_or_update(data=table_a)
     table_b_entity = metadata.create_or_update(data=table_b)
 
-    print(f"✓ Created Table A: {table_a_entity.fullyQualifiedName.__root__}")
-    print(f"✓ Created Table B: {table_b_entity.fullyQualifiedName.__root__}")
+    print(f"✓ Created Table A: {table_a_entity.fullyQualifiedName.root}")
+    print(f"✓ Created Table B: {table_b_entity.fullyQualifiedName.root}")
 
     return table_a_entity, table_b_entity
 
@@ -308,9 +308,9 @@ def create_pipeline_with_tasks():
     # Source: example_apis.py line 304
     pipeline = metadata.create_or_update(pipeline_request)
 
-    print(f"✓ Created Pipeline: {pipeline.fullyQualifiedName.__root__}")
-    print(f"  Tasks: {len(pipeline.tasks.__root__)} task(s)")
-    print(f"  Source URL: {pipeline.sourceUrl.__root__}")
+    print(f"✓ Created Pipeline: {pipeline.fullyQualifiedName.root}")
+    print(f"  Tasks: {len(pipeline.tasks)} task(s)")
+    print(f"  Source URL: {pipeline.sourceUrl.root}")
 
     return pipeline
 
@@ -368,8 +368,8 @@ def create_kafka_topic_with_schema():
     # Source: example_apis.py line 323
     topic = metadata.create_or_update(topic_request)
 
-    print(f"✓ Created Topic: {topic.fullyQualifiedName.__root__}")
-    print(f"  Partitions: {topic.partitions.__root__}")
+    print(f"✓ Created Topic: {topic.fullyQualifiedName.root}")
+    print(f"  Partitions: {topic.partitions.root}")
     print(f"  Schema Type: {topic.messageSchema.schemaType.value}")
 
     return topic
@@ -494,9 +494,9 @@ def create_storage_containers():
     # Source: example_apis.py line 415
     container_entity = metadata.create_or_update(container_request)
 
-    print(f"✓ Created Container: {container_entity.fullyQualifiedName.__root__}")
-    print(f"  Objects: {container_entity.numberOfObjects.__root__}")
-    print(f"  Size: {container_entity.size.__root__} bytes")
+    print(f"✓ Created Container: {container_entity.fullyQualifiedName.root}")
+    print(f"  Objects: {container_entity.numberOfObjects.root}")
+    print(f"  Size: {container_entity.size.root} bytes")
 
     # Create nested child container
     # Source: example_apis.py lines 417-430
@@ -535,8 +535,8 @@ def create_storage_containers():
     # Source: example_apis.py line 434
     child_container_entity = metadata.create_or_update(child_container_request)
 
-    print(f"✓ Created Child Container: {child_container_entity.fullyQualifiedName.__root__}")
-    print(f"  Parent: {container_entity.name.__root__}")
+    print(f"✓ Created Child Container: {child_container_entity.fullyQualifiedName.root}")
+    print(f"  Parent: {container_entity.name.root}")
 
     return container_entity, child_container_entity
 
@@ -589,7 +589,7 @@ def create_api_collection_and_endpoint():
     # Source: example_apis.py line 491
     collection_entity = metadata.create_or_update(data=collection_request)
 
-    print(f"✓ Created API Collection: {collection_entity.fullyQualifiedName.__root__}")
+    print(f"✓ Created API Collection: {collection_entity.fullyQualifiedName.root}")
 
     # Create API endpoint with schemas
     # Source: example_apis.py lines 495-569
@@ -673,7 +673,7 @@ def create_api_collection_and_endpoint():
     # Source: example_apis.py line 571
     endpoint_entity = metadata.create_or_update(data=endpoint_request)
 
-    print(f"✓ Created API Endpoint: {endpoint_entity.fullyQualifiedName.__root__}")
+    print(f"✓ Created API Endpoint: {endpoint_entity.fullyQualifiedName.root}")
     print(f"  Method: {endpoint_entity.requestMethod.value}")
 
     return collection_entity, endpoint_entity

@@ -130,11 +130,11 @@ def create_table_pipeline_table_lineage():
     add_lineage_request_1 = AddLineageRequest(
         edge=EntitiesEdge(
             fromEntity=EntityReference(
-                id=table_a_entity.id,  # Source entity ID
+                id=table_a_entity.id.root,  # Source entity ID
                 type="table",  # Source entity type
             ),
             toEntity=EntityReference(
-                id=pipeline_entity.id,  # Destination entity ID
+                id=pipeline_entity.id.root,  # Destination entity ID
                 type="pipeline",  # Destination entity type
             ),
         ),
@@ -151,11 +151,11 @@ def create_table_pipeline_table_lineage():
     add_lineage_request_2 = AddLineageRequest(
         edge=EntitiesEdge(
             fromEntity=EntityReference(
-                id=pipeline_entity.id,  # Source: pipeline
+                id=pipeline_entity.id.root,  # Source: pipeline
                 type="pipeline",
             ),
             toEntity=EntityReference(
-                id=table_b_entity.id,  # Destination: tableB
+                id=table_b_entity.id.root,  # Destination: tableB
                 type="table",
             ),
         ),
@@ -208,8 +208,8 @@ def create_table_to_table_lineage():
     # Create direct table-to-table lineage
     add_lineage_request = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=table_a_entity.id, type="table"),
-            toEntity=EntityReference(id=table_b_entity.id, type="table"),
+            fromEntity=EntityReference(id=table_a_entity.id.root, type="table"),
+            toEntity=EntityReference(id=table_b_entity.id.root, type="table"),
         ),
     )
 
@@ -267,8 +267,8 @@ def create_multi_source_lineage():
     # Edge 1: tableA → pipeline
     lineage_1 = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=table_a.id, type="table"),
-            toEntity=EntityReference(id=pipeline.id, type="pipeline"),
+            fromEntity=EntityReference(id=table_a.id.root, type="table"),
+            toEntity=EntityReference(id=pipeline.id.root, type="pipeline"),
         ),
     )
     lineages.append(metadata.add_lineage(data=lineage_1))
@@ -277,8 +277,8 @@ def create_multi_source_lineage():
     # Edge 2: dim_orders → pipeline
     lineage_2 = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=dim_orders.id, type="table"),
-            toEntity=EntityReference(id=pipeline.id, type="pipeline"),
+            fromEntity=EntityReference(id=dim_orders.id.root, type="table"),
+            toEntity=EntityReference(id=pipeline.id.root, type="pipeline"),
         ),
     )
     lineages.append(metadata.add_lineage(data=lineage_2))
@@ -287,8 +287,8 @@ def create_multi_source_lineage():
     # Edge 3: pipeline → tableB (if not already exists)
     lineage_3 = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=pipeline.id, type="pipeline"),
-            toEntity=EntityReference(id=table_b.id, type="table"),
+            fromEntity=EntityReference(id=pipeline.id.root, type="pipeline"),
+            toEntity=EntityReference(id=table_b.id.root, type="table"),
         ),
     )
     lineages.append(metadata.add_lineage(data=lineage_3))
@@ -343,8 +343,8 @@ def create_fanout_lineage():
     # Edge 1: tableA → dim_orders
     lineage_1 = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=table_a.id, type="table"),
-            toEntity=EntityReference(id=dim_orders.id, type="table"),
+            fromEntity=EntityReference(id=table_a.id.root, type="table"),
+            toEntity=EntityReference(id=dim_orders.id.root, type="table"),
         ),
     )
     lineages.append(metadata.add_lineage(data=lineage_1))
@@ -353,8 +353,8 @@ def create_fanout_lineage():
     # Edge 2: tableA → tableB
     lineage_2 = AddLineageRequest(
         edge=EntitiesEdge(
-            fromEntity=EntityReference(id=table_a.id, type="table"),
-            toEntity=EntityReference(id=table_b.id, type="table"),
+            fromEntity=EntityReference(id=table_a.id.root, type="table"),
+            toEntity=EntityReference(id=table_b.id.root, type="table"),
         ),
     )
     lineages.append(metadata.add_lineage(data=lineage_2))
@@ -403,7 +403,7 @@ def query_entity_lineage():
         )
 
         print(f"✓ Queried lineage for: {table_fqn}")
-        print(f"  Entity ID: {table_entity.id.__root__}")
+        print(f"  Entity ID: {table_entity.id.root}")
 
         # Lineage information would be in table_entity.upstreamLineage/downstreamLineage
         # The exact structure depends on OpenMetadata version
