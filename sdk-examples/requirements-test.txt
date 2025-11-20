@@ -14,3 +14,7 @@ coverage>=7.3.0
 # OpenMetadata SDK (latest version)
 # Using latest stable release for all new features and bug fixes
 openmetadata-ingestion>=1.10.0
+
+# Additional SDK dependencies (sometimes not auto-installed)
+jsonpatch>=1.32
+email-validator>=2.0.0
