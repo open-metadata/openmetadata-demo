@@ -38,10 +38,10 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install --prefer-binary -r sdk-examples/requirements-test.txt
 
-      - name: Run tests with pytest (no coverage for debugging)
+      - name: Run tests with pytest and coverage
         working-directory: sdk-examples
         run: |
-          pytest tests/ -v -s
+          pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml --cov-report=html
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
