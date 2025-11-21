@@ -82,7 +82,7 @@ class TestEntityModels:
         assert table.name.root == "test-table"
         assert table.databaseSchema.root == "test-service.test-db.test-schema"
         assert len(table.columns) == 1
-        assert table.columns[0].name == "id"
+        assert table.columns[0].name.root == "id"
         assert table.columns[0].dataType == DataType.BIGINT
 
     def test_create_table_request_with_multiple_columns(self):
