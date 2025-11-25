@@ -43,13 +43,14 @@ jobs:
         run: |
           pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml --cov-report=html
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./sdk-examples/coverage.xml
-          flags: sdk-examples
-          name: sdk-examples-python-3.10
-          fail_ci_if_error: false
+      - name: Verify coverage data exists
+        working-directory: sdk-examples
+        run: |
+          if [ ! -f .coverage ]; then
+            echo "Error: No coverage data found. Coverage was not collected."
+            exit 1
+          fi
+          echo "Coverage data verified at .coverage"
 
       - name: Coverage comment
         uses: py-cov-action/python-coverage-comment-action@v3
@@ -60,6 +61,7 @@ jobs:
           MINIMUM_ORANGE: 90
           ANNOTATE_MISSING_LINES: true
           ANNOTATION_TYPE: warning
+          COVERAGE_PATH: sdk-examples
 
       - name: Generate coverage report
         if: always()
@@ -123,9 +125,9 @@ jobs:
 
       - name: Check for common issues
         run: |
-          # Check all files have proper headers
+          # Check all files have proper docstrings (skip shebangs and encoding declarations)
           for file in sdk-examples/*.py; do
-            if ! head -n 1 "$file" | grep -q '"""'; then
+            if ! head -n 20 "$file" | grep -E '^("""|'"'"''"'"''"'"')' > /dev/null; then
               echo "Missing docstring in $file"
               exit 1
             fi
