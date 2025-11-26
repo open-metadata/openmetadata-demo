@@ -81,6 +81,7 @@ python_functions = "test_*"
 
 [tool.coverage.run]
 source = ["."]
+relative_files = true
 omit = [
     "tests/*",
     "*/tests/*",

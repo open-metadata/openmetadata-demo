@@ -1,6 +1,7 @@
 [run]
 # Coverage configuration
 source = .
+relative_files = true
 omit =
     */tests/*
     */test_*
