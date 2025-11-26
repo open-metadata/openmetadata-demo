@@ -1,0 +1,139 @@
+name: Test SDK Examples
+
+on:
+  pull_request:
+    paths:
+      - 'sdk-examples/**'
+      - '.github/workflows/test-sdk-examples.yml'
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'sdk-examples/**'
+      - '.github/workflows/test-sdk-examples.yml'
+
+jobs:
+  test:
+    name: Test SDK Examples (Python 3.10)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r sdk-examples/requirements-test.txt
+
+      - name: Run tests with pytest and coverage
+        working-directory: sdk-examples
+        run: |
+          pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml --cov-report=html
+
+      - name: Verify coverage data exists
+        working-directory: sdk-examples
+        run: |
+          if [ ! -f .coverage ]; then
+            echo "Error: No coverage data found. Coverage was not collected."
+            exit 1
+          fi
+          echo "Coverage data verified at .coverage"
+
+      - name: Coverage comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        if: github.event_name == 'pull_request'
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 100
+          MINIMUM_ORANGE: 90
+          ANNOTATE_MISSING_LINES: true
+          ANNOTATION_TYPE: warning
+          COVERAGE_PATH: sdk-examples
+
+      - name: Generate coverage report
+        if: always()
+        working-directory: sdk-examples
+        run: |
+          pip install coverage
+          coverage report --show-missing
+
+  lint:
+    name: Lint SDK Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black isort
+
+      - name: Check formatting with black
+        run: |
+          black --check sdk-examples/*.py sdk-examples/tests/*.py || true
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only sdk-examples/*.py sdk-examples/tests/*.py || true
+
+      - name: Lint with ruff
+        run: |
+          ruff check sdk-examples/*.py sdk-examples/tests/*.py || true
+
+  validate-examples:
+    name: Validate Example Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r sdk-examples/requirements-test.txt
+
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile sdk-examples/*.py
+          python -m py_compile sdk-examples/tests/*.py
+
+      - name: Check for common issues
+        run: |
+          # Check all files have proper docstrings (skip shebangs and encoding declarations)
+          for file in sdk-examples/*.py; do
+            if ! head -n 20 "$file" | grep -E '^("""|'"'"''"'"''"'"')' > /dev/null; then
+              echo "Missing docstring in $file"
+              exit 1
+            fi
+          done
+
+      - name: Verify all imports can be resolved
+        working-directory: sdk-examples
+        run: |
+          python -c "import setup; import services; import entities; import metadata_ops; import lineage; import queries; import advanced"

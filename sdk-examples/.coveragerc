@@ -1,0 +1,25 @@
+[run]
+# Coverage configuration
+source = .
+relative_files = true
+omit =
+    */tests/*
+    */test_*
+    setup.py
+    conftest.py
+    venv/*
+    .venv/*
+
+[report]
+# Report configuration
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+[html]
+directory = htmlcov
