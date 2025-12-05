@@ -23,7 +23,7 @@ all the required methods ([docs](https://docs.open-metadata.org/sdk/python/build
 
 In `connector/my_awesome_connector.py` you have a minimal example of it.
 
-Note how te important method is the `_iter`. This is the generator function that will be iterated over
+Note how the important method is the `_iter`. This is the generator function that will be iterated over
 to send all the Create Entity Requests to the `Sink`. Read more about the `Workflow` [here](https://docs.open-metadata.org/sdk/python/build-connector).
 
 ## Step 2 - Yield the data
