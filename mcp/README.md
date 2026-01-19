@@ -186,10 +186,10 @@ The [OpenMetadata Sandbox](https://sandbox.open-metadata.org/) is an OpenMetadat
 * Extension Name: `collate`
 * Type: `STDIO`
 * Description:
-* Command: `uvx jupyter-mcp-server@latest`
+* Command: `npx -y mcp-remote https://sandbox.open-metadata.org/mcp --auth-server-url=https://sandbox.open-metadata.org/mcp --client-id=openmetadata --verbose --clean --header Authorization:${COLLATE_AUTH_HEADER}`
 * Timeout: `300`
 * Environment Variables
- * Variable name: `AUTH_HEADER`
+ * Variable name: `COLLATE_AUTH_HEADER`
  * Value:
    ```
    Bearer <PASTE_YOUR_OpenMetadata_TOKEN_HERE>
