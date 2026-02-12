@@ -188,3 +188,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+
+# Jupyter Notebooks
+sdk-2.0-examples/*.ipynb
+sdk-2.0-examples/.ipynb_checkpoints/
