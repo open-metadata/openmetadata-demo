@@ -1,0 +1,151 @@
+name: Validate maintained examples
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            custom-connector/pyproject.toml
+            custom-graphql/pyproject.toml
+            dynamic_csv_importer/requirements.txt
+            api-lineage-cicd/requirements.txt
+            ingestion-automation/requirements.txt
+
+      - name: Install exact OpenMetadata RC and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --editable './custom-connector[test]'
+          python -m pip install --editable ./custom-graphql
+          python -m pip install \
+            --requirement dynamic_csv_importer/requirements.txt \
+            --requirement api-lineage-cicd/requirements.txt \
+            --requirement ingestion-automation/requirements.txt
+
+      - name: Verify the installed OpenMetadata version
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+
+          assert version("openmetadata-ingestion") == "2.0.0.0rc1"
+          PY
+
+      - name: Compile Python sources
+        run: >-
+          python -m compileall -q
+          custom-connector/src
+          custom-connector/tests
+          custom-graphql
+          dynamic_csv_importer
+          api-lineage-cicd
+          ingestion-automation
+          tests
+
+      - name: Lint and check formatting
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run model, configuration, import, and request tests
+        run: pytest
+
+  node:
+    name: Node fixture
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: custom-graphql/server
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: custom-graphql/server/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check index.js
+          node --check resolvers.js
+          node --check schema.js
+
+  compose:
+    name: Docker Compose configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Download the official OpenMetadata 2.0 RC1 Compose file
+        run: >-
+          curl --fail --silent --show-error --location
+          --output "${RUNNER_TEMP}/docker-compose-postgres.yml"
+          https://github.com/open-metadata/OpenMetadata/releases/download/2.0.0-rc1-release/docker-compose-postgres.yml
+
+      - name: Validate the Compose overlay
+        run: >-
+          docker compose
+          --project-directory "${GITHUB_WORKSPACE}"
+          --file "${RUNNER_TEMP}/docker-compose-postgres.yml"
+          --file custom-connector/docker/compose.override.yml
+          config --quiet
+
+  links:
+    name: Markdown links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@v2.9.0
+        with:
+          args: --no-progress --config .lychee.toml './**/*.md'
+          fail: true
+
+  secrets:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Scan the repository
+        run: >-
+          docker run --rm
+          --volume "${GITHUB_WORKSPACE}:/repo"
+          zricethezav/gitleaks:v8.27.0
+          dir /repo --redact --no-banner
