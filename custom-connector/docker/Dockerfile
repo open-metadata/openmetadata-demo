@@ -1,12 +1,8 @@
-FROM openmetadata/ingestion:1.7.0
+FROM docker.getcollate.io/openmetadata/ingestion:2.0.0-rc1
 
-# Let's use the same workdir as the ingestion image
-WORKDIR ingestion
+WORKDIR /opt/airflow/openmetadata-demo-connectors
 USER airflow
 
-# Install our custom connector
-COPY connector connector
-COPY setup.py .
-COPY sample.csv .
-COPY person_info.proto .
+COPY --chown=airflow:0 pyproject.toml ./
+COPY --chown=airflow:0 src ./src
 RUN pip install --no-deps .
