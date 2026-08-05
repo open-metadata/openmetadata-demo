@@ -1,10 +1,18 @@
-CREATE DATABASE metabaseappdb;
+BEGIN;
 
-CREATE USER openmetadata_user WITH PASSWORD 'password';
 GRANT ALL PRIVILEGES ON DATABASE postgres TO openmetadata_user;
 
-CREATE EXTENSION pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 GRANT pg_read_all_stats TO openmetadata_user;
+
+-- Keep retries deterministic by replacing only the objects owned by this workshop.
+DROP VIEW IF EXISTS public.actor_view;
+DROP TABLE IF EXISTS public.sensitive_customers;
+DROP TABLE IF EXISTS public.film_actor;
+DROP TABLE IF EXISTS public.bad_actor;
+DROP TABLE IF EXISTS public.actor;
+DROP SEQUENCE IF EXISTS public.sensitive_customers_id_seq;
+DROP SEQUENCE IF EXISTS public.actor_actor_id_seq;
 
 CREATE SEQUENCE public.actor_actor_id_seq
     START WITH 1
@@ -41,6 +49,8 @@ CREATE VIEW public.actor_view AS
   SELECT actor_id, first_name, last_name, last_update
   FROM public.actor;
 
+ALTER VIEW public.actor_view OWNER TO openmetadata_user;
+
 ALTER TABLE public.film_actor OWNER TO openmetadata_user;
 
 ALTER TABLE ONLY public.actor
@@ -60,7 +70,7 @@ CREATE SEQUENCE public.sensitive_customers_id_seq
 ALTER TABLE public.sensitive_customers_id_seq OWNER TO openmetadata_user;
 
 CREATE TABLE public.sensitive_customers (
-    customer_id integer DEFAULT nextval('public.actor_actor_id_seq'::regclass) NOT NULL,
+    customer_id integer DEFAULT nextval('public.sensitive_customers_id_seq'::regclass) NOT NULL,
     user_name VARCHAR(50),
     SSN VARCHAR(50),
     address VARCHAR(50),
@@ -324,4 +334,3 @@ INSERT INTO public.film_actor VALUES (10, 930, '2022-02-15 10:05:03+00');
 INSERT INTO public.film_actor VALUES (10, 964, '2022-02-15 10:05:03+00');
 
 COMMIT;
-

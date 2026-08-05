@@ -1,227 +1,215 @@
-# AI Driven Automation in Open-Source Metadata Platforms: Embedding an MCP Server
+# OpenMetadata MCP Workshop
 
-Hello PyCon Ireland! Thank you for joining our training session! You can find the contents below, please let me know if there's anything you need!
+This workshop connects the OpenMetadata Model Context Protocol (MCP) server to Goose and then
+combines it with a Jupyter MCP server for metadata exploration and visualization.
 
-*Note - This training was prepared using a MacBook*
+> [!IMPORTANT]
+> This local setup targets the OpenMetadata `2.0.0-rc1` prerelease. The workshop is validated for
+> links and checked-in seed-file invariants only. It is not exercised end to end in CI, and UI labels may
+> change before the final 2.0 release.
 
-## Contents
-1. [Prerequisites](#prerequisites)
-2. [OpenMetadata](#openmetadata)
-3. [goose](#goose) 
-4. [Integrating Python](#python)
-5. [Scaling out with Collate](#collate)
-6. [Wrapping up and feedback](#end)
+## Prerequisites
 
-## Prerequisites <a name="prerequisites"></a>
-Before getting started, please make sure you have the following three services on your laptop:
-1. [node](https://nodejs.org/en/download) - on a MacBook, you might have to run `xcode-select --install` before installing Node
-2. [Docker Desktop 4.49.0](https://www.docker.com/products/docker-desktop/) - there are open-source alternatives to Docker, like Podman, that are great, please do not use them for this workshop!
-3. [goose Desktop 1.12.0](https://block.github.io/goose/docs/quickstart/) - Desktop, not goose CLI
+Install the following tools:
 
-This workshop is *bring-you-own-agent*, and you will need API key for it, almost any AI Agent will do!
+1. [Node.js](https://nodejs.org/en/download)
+2. [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+3. [Goose Desktop](https://goose-docs.ai/docs/quickstart/)
+4. Python 3.10 or later
+5. [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-## OpenMetadata <a name="openmetadata"></a>
-### Installing OpenMetadata
-With the prerequisites installed, we will move on to installing OpenMetadata. OpenMetadata is an open-source metadata platform for data discovery, observability and governance! If you have any questions about OpenMetadata, please ask! We will be installing OpenMetadata along with its supporting components:
+Configure Goose with an AI provider before starting the workshop.
 
- * Airflow - Which orchestrates ingestion jobs that bring new metadata into OpenMetadata and keeps it up-to-date as data systems change
- * Elasticsearch - Search indexing to retrieve OpenMetadata assets
- * PostgreSQL - Stores and maintain state for OpenMetadata assets
+## Install OpenMetadata
 
-We'll bring all these services online with the following commands:
+From the repository root, download the official OpenMetadata 2.0 RC Compose file and start its
+services:
 
-```
-curl -sL -o docker-compose-postgres.yml https://github.com/open-metadata/OpenMetadata/releases/download/1.10.4-release/docker-compose-postgres.yml
+```bash
+curl -fsSL -o docker-compose-postgres.yml \
+  https://github.com/open-metadata/OpenMetadata/releases/download/2.0.0-rc1-release/docker-compose-postgres.yml
 docker compose -f docker-compose-postgres.yml up --detach
 ```
 
-Once OpenMetadata is ready, run 
+Wait for OpenMetadata to become available at
+[http://localhost:8585](http://localhost:8585). Then load the local
+[PostgreSQL seed data](resources/postgres-script.sql):
 
+```bash
+docker exec -i openmetadata_postgresql \
+  psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  < mcp/resources/postgres-script.sql
 ```
-curl -fsSL https://raw.githubusercontent.com/open-metadata/openmetadata-demo/main/mcp/resources/postgres-script.sql | docker exec -i openmetadata_postgresql psql -U postgres -d postgres
-```
 
-| ![openmetadata-login.png](./images/openmetadata-login.png) |
-|:--:|
-| Welcome to OpenMetadata! |
+The checked-in seed file is the version used by this workshop. `ON_ERROR_STOP` makes the command
+fail immediately if the database rejects a statement. The seed grants database access to
+`openmetadata_user`, installs `pg_stat_statements`, grants `pg_read_all_stats`, and drops and
+recreates the workshop's `actor`, `bad_actor`, `film_actor`, `sensitive_customers`, `actor_view`,
+`actor_actor_id_seq`, and `sensitive_customers_id_seq` objects in the `postgres` database. Run it
+only against the disposable database started by this workshop's Compose stack.
 
-### Adding postgreSQL to OpenMetadata
-Adding a connector in OpenMetadata is easy, we've already loaded some sample data into the postgreSQL database OpenMetadata is using to manage asset states, so we will use that, but you can just as easily connect to cloud data services like Snowflake, RedShift, BigQuery, and Databricks.
+| ![OpenMetadata login](./images/openmetadata-login.png) |
+| :--: |
+| OpenMetadata login page |
 
-* Go to [OpenMetadata](http://localhost:8585/)
-* Login
-  * Email: admin@open-metadata.org
-  * Password: admin
-* Go to Settings -> Services -> Databases -> and select **Add New Service**
-* Select **Postgres**, then **Next**
-* Enter the **Service Name** as *postgres* with the following Connection Details:
-  * Username: `openmetadata_user`
-  * Auth Configuration Type: `Basic Auth`
-  * Password: `openmetadata_password`
-  * Host and Port: `postgresql:5432`
-  * Database: openmetadata_db
-  * Enable **Ingest All Databases**
-  * Select **Next**
-  * No edits are needed in the filters page, scroll down and select **Save**
- 
-| ![add-postgres.png](./images/add-postgres.png) |
-|:--:|
-| Adding a postgres connector to OpenMetadata |
+## Add PostgreSQL to OpenMetadata
 
-## Adding the OpenMetadata MCP Server to goose <a name="setup"></a>
-An OpenMetadata Personal Access Token (PAT) will be needed to add OpenMetadata to goose. From [here](http://localhost:8585/users/admin/access-token), select **Generate New Token**
+The seed data is stored in the PostgreSQL container that also stores OpenMetadata state. Add that
+container as a database service for the workshop:
 
-| ![generate-token.png](./images/generate-token.png) |
-|:--:|
-| An OpenMetadata PAT is needed to use it in goose |
+1. Open [Database Services](http://localhost:8585/settings/services/databases).
+2. Log in with the default local email `admin@open-metadata.org` and password `admin`.
+3. Select **Add New Service**, choose **Postgres**, and select **Next**.
+4. Enter `postgres` as the service name.
+5. Configure the connection:
+   - Username: `openmetadata_user`
+   - Authentication type: **Basic Auth**
+   - Password: use the `DB_USER_PASSWORD` value from `docker-compose-postgres.yml`. Its local
+     development default is `openmetadata_password`.
+   - Host and port: `postgresql:5432`
+   - Database: `openmetadata_db`
+   - Ingest all databases: enabled
+6. Save the service without adding database filters.
 
-Copy this token to paste into goose later.
+| ![Add a PostgreSQL service](./images/add-postgres.png) |
+| :--: |
+| PostgreSQL connector settings |
 
-With OpenMetadata up and running, we can add it's MCP server as a goose extension! Open goose, select Extensions, then **+Add custom extension**
+Run the metadata ingestion from the new service page. After it completes, the seeded assets appear
+under the `postgres.postgres.public` schema.
 
-Please create your OpenMetadata Extension with the following options:
-* Extension Name: `openmetadata`
-* Type: `STDIO`
-* Description:
-* Command: `npx -y mcp-remote http://localhost:8585/mcp --auth-server-url=http://localhost:8585/mcp --client-id=openmetadata --verbose --clean --header Authorization:${AUTH_HEADER}`
-* Timeout: `300`
-* Environment Variables
- * Variable name: `AUTH_HEADER`
- * Value:
-   ```
-   Bearer <PASTE_YOUR_OpenMetadata_TOKEN_HERE>
-   ```
- * Select **+Add**
-* Select **Save Changes**
+## Connect OpenMetadata to Goose
 
-| ![openmetadata-extension.png](./images/openmetadata-extension.png) |
-|:--:|
-| OpenMetadata MCP Server in goose |
+The local workshop uses a Personal Access Token (PAT). OAuth is recommended for shared or
+production deployments. Follow the [OpenMetadata MCP authentication guide](https://docs.open-metadata.org/latest/how-to-guides/mcp)
+when adapting this setup beyond a local workshop.
 
-## goose 🎉 <a name="goose"></a>
-Now we'll recreate one of the usecases we just saw from the community!
+1. Open the local [admin access-token page](http://localhost:8585/users/admin/access-token).
+2. Generate a token and copy it.
+3. In Goose, open **Extensions** and select **Add custom extension**.
+4. Enter the following values:
+   - Extension name: `openmetadata`
+   - Type: `STDIO`
+   - Command:
 
-In our [sample data schema](http://localhost:8585/databaseSchema/postgres.postgres.public), you will see 7 tables. We will add some classifications to this schema and have an AI agent push those changes to every table.
+     ```text
+     npx -y mcp-remote http://localhost:8585/mcp --auth-server-url=http://localhost:8585/mcp --client-id=openmetadata --verbose --clean --header Authorization:${AUTH_HEADER}
+     ```
 
-* In OpenMetadata
-  * Go to the [public databaseSchema](http://localhost:8585/databaseSchema/postgres.postgres.public)
-  * Select the **Edit Certification** button
-  * Select **Gold**
-  * Select :white_check_mark: to apply this certification to the *schema*
-* In goose
-  * Go to the [Use OpenMetadata goose Recipe](https://block.github.io/goose/recipes/detail?id=use-openmetadata)
-  * Scroll down to *Launch in Goose Desktop*, and paste your fqn `postgres.postgres.public` into the new goose session!  
-* Back in OpenMetadata
-   * [Tables](http://localhost:8585/table/postgres.postgres.public.actor) should now have the same Certification!      
+   - Timeout: `300`
+   - Environment variable name: `AUTH_HEADER`
+   - Environment variable value: `Bearer <PASTE_OPENMETADATA_TOKEN_HERE>`
+5. Save the extension.
 
-Feel free to experiment with OpenMetadata, OpenMetadata MCP, and goose!
+The command follows the current
+[Goose OpenMetadata extension guide](https://goose-docs.ai/docs/mcp/openmetadata-mcp/).
 
-## Integrating Python via Jupyter MCP <a name="python"></a>
-For this lab, we are going to create a virtual environment so that everyone can work from the same Python.
+| ![OpenMetadata extension in Goose](./images/openmetadata-extension.png) |
+| :--: |
+| OpenMetadata MCP extension settings |
 
-```
+## Explore Metadata With Goose
+
+Open the [`postgres.postgres.public` schema](http://localhost:8585/databaseSchema/postgres.postgres.public)
+and apply the **Gold** certification to the schema. Start a new Goose session and provide the fully
+qualified name (FQN). Ask Goose to inspect the schema, count its tables, and apply the same
+certification to its tables. Confirm the changes in OpenMetadata after Goose finishes.
+
+This step intentionally avoids fixed asset counts. The response should reflect the assets present in
+the running RC environment.
+
+## Add Jupyter MCP
+
+Create a virtual environment and install the versions recommended by the current
+[Jupyter MCP Server setup](https://github.com/datalayer/jupyter-mcp-server#getting-started):
+
+```bash
 python3 -m venv pycon
 source pycon/bin/activate
+pip install \
+  jupyterlab==4.4.1 \
+  jupyter-collaboration==4.0.2 \
+  'jupyter-mcp-tools>=0.1.4' \
+  ipykernel \
+  pycrdt
+JUPYTER_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export JUPYTER_TOKEN
+printf 'Jupyter token: %s\n' "$JUPYTER_TOKEN"
+jupyter lab --port 8888 --IdentityProvider.token "$JUPYTER_TOKEN" --ip 127.0.0.1
 ```
 
-From the pycon virtual environment, run:
+JupyterLab is available at [http://localhost:8888](http://localhost:8888). Use the token printed in
+the terminal when prompted.
 
-```
-pip install jupyterlab==4.4.1 jupyter-collaboration==4.0.2 jupyter-mcp-tools==0.1.3 ipykernel uv
-pip uninstall -y pycrdt datalayer_pycrdt
-pip install datalayer_pycrdt==0.12.17
-jupyter lab --port 8888 --IdentityProvider.token pycon --ip 0.0.0.0
-```
-This will start a JupyterLab instance at [http://localhost:8888/](http://localhost:8888/), if you are prompt for a password, enter `pycon`.
+In Goose, add another custom extension:
 
-### Adding JupyterLab to goose
-Just like OpenMetadata, we will add JupyterLab as an extension to goose with the following options:
+- Extension name: `jupyter`
+- Type: `STDIO`
+- Command: `uvx jupyter-mcp-server@latest`
+- Timeout: `300`
+- Environment variables:
+  - `JUPYTER_URL`: `http://localhost:8888`
+  - `JUPYTER_TOKEN`: the token printed when JupyterLab started
+  - `ALLOW_IMG_OUTPUT`: `true`
 
-* Extension Name: `jupyter`
-* Type: `STDIO`
-* Description:
-* Command: `uvx jupyter-mcp-server@latest`
-* Timeout: `300`
-* Environment Variables
-  * Variable name: `JUPYTER_URL`
-   * Value: `"http://localhost:8888"`
-  * Variable name: `JUPYTER_TOKEN`
-    * Value: `pycon`
-  * Variable name: `ALLOW_IMG_OUTPUT`
-    * Value: `true`
-  * Make sure to Select **+Add** for each Environment Variable
-* Select **Save Changes**
+Save the extension after adding each environment variable.
 
-| ![jupyter-extension.png](./images/jupyter-extension.png) |
-|:--:|
-| Extension details for Jupyter MCP Server |
+| ![Jupyter extension in Goose](./images/jupyter-extension.png) |
+| :--: |
+| Jupyter MCP extension settings |
 
-We can now use the JupyterLab and OpenMetadata MCP Servers together in goose!
+## Combine the MCP Servers
 
-In goose, prompt
+Ask Goose to query the actual table counts and build a notebook from those results. For example:
 
-```
-How many tables are in postgres.postgres.public?
+```text
+Report the table count for each database available through the postgres OpenMetadata service.
 ```
 
-then,
+Then ask it to create a visualization:
 
-```
-How many tables are in postgres.postgres.public, postgres.airflow_db.public, and postgres.openmetadata_db.public
-```
-
-goose should return 7, 48, and 147, then we can bring JupyterLab in,
-
-```
-Create a new notebook pycon.ipynb and build a visualization with the table counts for each postgres database
+```text
+Create pycon.ipynb and visualize the reported table counts by database.
 ```
 
-| ![goose-notebook.png](./images/goose-notebook.png) |
-|:--:|
-| Combining MCP Servers from OpenMetadata and Jupyter! |
+Verify the values in OpenMetadata before relying on the generated notebook. The steps ask you to
+validate the local setup manually; CI checks only links and seed-file invariants, not
+model-generated analysis.
 
-## Scaling out with Collate <a name="collate"></a>
-The [OpenMetadata Sandbox](https://sandbox.open-metadata.org/) is an OpenMetadata instance hosted and curated by Collate. We can use it for a better look at combining OpenMetadata and Jupyter MCP servers. Log into the sandbox, and generate a Personal Access Token for yourself, just like before, and add one more extension to goose.
+| ![Notebook generated through Goose](./images/goose-notebook.png) |
+| :--: |
+| OpenMetadata and Jupyter MCP servers used together |
 
-* Extension Name: `collate`
-* Type: `STDIO`
-* Description:
-* Command: `npx -y mcp-remote https://sandbox.open-metadata.org/mcp --auth-server-url=https://sandbox.open-metadata.org/mcp --client-id=openmetadata --verbose --clean --header Authorization:${COLLATE_AUTH_HEADER}`
-* Timeout: `300`
-* Environment Variables
- * Variable name: `COLLATE_AUTH_HEADER`
- * Value:
+## Optional: Connect to the OpenMetadata Sandbox
+
+The [OpenMetadata Sandbox](https://sandbox.open-metadata.org/) is a hosted environment maintained by
+Collate. Generate a PAT from the sandbox and repeat the OpenMetadata extension setup with these
+changes:
+
+- Extension name: `collate`
+- Command:
+
+  ```text
+  npx -y mcp-remote https://sandbox.open-metadata.org/mcp --auth-server-url=https://sandbox.open-metadata.org/mcp --client-id=openmetadata --verbose --clean --header Authorization:${COLLATE_AUTH_HEADER}
+  ```
+
+- Environment variable name: `COLLATE_AUTH_HEADER`
+- Environment variable value: `Bearer <PASTE_SANDBOX_TOKEN_HERE>`
+
+Keep the local and hosted extension names distinct so Goose can target the intended server.
+
+## Shut Down the Workshop
+
+1. Return to the terminal running JupyterLab, press <kbd>Ctrl</kbd>+<kbd>C</kbd>, and confirm the
+   shutdown if prompted.
+2. Deactivate the Python virtual environment:
+
+   ```bash
+   deactivate
    ```
-   Bearer <PASTE_YOUR_OpenMetadata_TOKEN_HERE>
+
+3. Stop the local services from the repository root:
+
+   ```bash
+   docker compose -f docker-compose-postgres.yml down
    ```
-* Select **+Add**, then **Save Changes**
-
-| ![collate-extension.png](./images/collate-extension.png) |
-|:--:|
-| Adding the OpenMetadata Sandbox to goose |
-
-For a model to be able to easily differentiate between this OpenMetadata and the one on your laptop, we have named it Collate. Now you can try the following prompts:
-
-```
-How many assets are in collate?
-```
-
-or:
-
-```
-How many assets have gold certifications, silver certifications, and bronze certifications?
-```
-
-and to combine it with the Jupyter MCP server:
-```
-Create a new notebook collate.ipynb and build a visualization with the asset counts by type in one cell and the assets counts by certification in another.
-```
-
-## Wrapping up and feedback <a name="end"></a>
-To shutdown your OpenMetadata services, run the following command:
-
-```
-docker compose down
-```
-
-Or, you can add additional metadata connectors to your OpenMetadata instance! Popular connectors include Snowflake, BigQuery, Databricks, and Tableau!
