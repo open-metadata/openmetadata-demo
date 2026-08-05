@@ -22,34 +22,32 @@ Each step reads from a declarative YAML file so this script can be
 integrated into a CI/CD pipeline.
 
 Usage:
-    pip install "openmetadata-ingestion~=1.6.0"
+    pip install "openmetadata-ingestion==2.0.0.0rc1"
     python api_lineage_cicd.py
 """
+
+import os
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Optional
 
 import yaml
-
-from metadata.sdk import configure, APICollections, APIEndpoints
-from metadata.sdk.api.lineage import Lineage
-
-from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
-from metadata.generated.schema.api.services.createApiService import (
-    CreateApiServiceRequest,
-)
 from metadata.generated.schema.api.data.createAPICollection import (
     CreateAPICollectionRequest,
 )
 from metadata.generated.schema.api.data.createAPIEndpoint import (
     CreateAPIEndpointRequest,
 )
+from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
+from metadata.generated.schema.api.services.createApiService import (
+    CreateApiServiceRequest,
+)
 from metadata.generated.schema.entity.data.apiEndpoint import (
-    ApiRequestMethod,
     APIEndpoint,
+    ApiRequestMethod,
 )
 from metadata.generated.schema.entity.services.apiService import (
-    ApiServiceType,
     ApiService,
+    ApiServiceType,
 )
 from metadata.generated.schema.type.apiSchema import APISchema
 from metadata.generated.schema.type.basic import (
@@ -63,24 +61,20 @@ from metadata.generated.schema.type.entityLineage import (
     LineageDetails,
 )
 from metadata.generated.schema.type.entityReference import EntityReference
-from metadata.generated.schema.type.schema import DataTypeTopic, FieldName, SchemaType, FieldModel
-
-OM_HOST = "http://localhost:8585/api"
-OM_JWT_TOKEN = (
-    "eyJraWQiOiJHYjM4OWEtOWY3Ni1nZGpzLWE5MmotMDI0MmJrOTQzNTYiLCJ0eXAiOiJKV1QiLCJh"
-    "bGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlzQm90IjpmYWxzZSwiaXNzIjoib3Blbi1tZXRh"
-    "ZGF0YS5vcmciLCJpYXQiOjE2NjM5Mzg0NjIsImVtYWlsIjoiYWRtaW5Ab3Blbm1ldGFkYXRhLm9y"
-    "ZyJ9.tS8um_5DKu7HgzGBzS1VTA5uUjKWOCU0B_j08WXBiEC0mr0zNREkqVfwFDD-d24HlNEbrqio"
-    "LsBuFRiwIWKc1m_ZlVQbG7P36RUxhuv2vbSp80FKyNM-Tj93FDzq91jsyNmsQhyNv_fNr3TXfzzSPj"
-    "Ht8Go0FMMP66weoKMgW2PbXlhVKwEuXUHyakLLzewm9UMeQaEiRzhiTMU3UkLXcKbYEJJvfNFcLwSl"
-    "9W8JCO_l0Yj3ud-qt_nQYEZwqW6u5nfdQllN133iikV4fM5QZsMCnm8Rq1mvLR0y9bmJiD7fwM1tmJ"
-    "791TUWqmKaTnP49U493VanKpUAfzIiOiIbhg"
+from metadata.generated.schema.type.schema import (
+    DataTypeTopic,
+    FieldModel,
+    FieldName,
+    SchemaType,
 )
-
+from metadata.ingestion.ometa.utils import model_str
+from metadata.sdk import APICollections, APIEndpoints, configure
+from metadata.sdk.api.lineage import Lineage
 
 # ------------------------------------------------------------------ #
 # Helpers
 # ------------------------------------------------------------------ #
+
 
 def load_yaml(filename: str) -> dict:
     path = Path(__file__).parent / filename
@@ -88,7 +82,20 @@ def load_yaml(filename: str) -> dict:
         return yaml.safe_load(f)
 
 
-def build_api_schema(raw: Optional[dict]) -> Optional[APISchema]:
+def configure_from_environment(
+    environ: Mapping[str, str] | None = None,
+) -> None:
+    """Configure the SDK from the standard OpenMetadata environment variables."""
+    values = os.environ if environ is None else environ
+    try:
+        host = values["OPENMETADATA_HOST"]
+        token = values["OPENMETADATA_JWT_TOKEN"]
+    except KeyError as exc:
+        raise RuntimeError(f"Missing required environment variable: {exc.args[0]}") from exc
+    configure(host=host, jwt_token=token)
+
+
+def build_api_schema(raw: dict | None) -> APISchema | None:
     if not raw:
         return None
     schema_fields = raw.get("schemaFields") or []
@@ -106,10 +113,14 @@ def build_api_schema(raw: Optional[dict]) -> Optional[APISchema]:
                         description=c.get("description"),
                     )
                     for c in f.get("children", [])
-                ] if f.get("children") else None,
+                ]
+                if f.get("children")
+                else None,
             )
             for f in schema_fields
-        ] if schema_fields else None,
+        ]
+        if schema_fields
+        else None,
     )
 
 
@@ -117,50 +128,68 @@ def build_api_schema(raw: Optional[dict]) -> Optional[APISchema]:
 # Step 1 — Create an API Service from YAML
 # ------------------------------------------------------------------ #
 
+
+def build_api_service_request(raw: dict) -> CreateApiServiceRequest:
+    """Build a service request from its declarative definition."""
+    return CreateApiServiceRequest(
+        name=raw["serviceName"],
+        serviceType=ApiServiceType(raw["serviceType"]),
+        displayName=raw.get("displayName"),
+        description=raw.get("description"),
+    )
+
+
+def build_api_collection_request(
+    raw: dict,
+    service_fqn: str,
+) -> CreateAPICollectionRequest:
+    """Build a collection request under an API service."""
+    return CreateAPICollectionRequest(
+        name=raw["name"],
+        displayName=raw.get("displayName"),
+        description=raw.get("description"),
+        endpointURL=raw.get("endpointURL"),
+        service=service_fqn,
+    )
+
+
+def build_api_endpoint_request(
+    raw: dict,
+    collection_fqn: str,
+) -> CreateAPIEndpointRequest:
+    """Build an endpoint request under an API collection."""
+    return CreateAPIEndpointRequest(
+        name=raw["name"],
+        displayName=raw.get("displayName"),
+        description=raw.get("description"),
+        apiCollection=collection_fqn,
+        endpointURL=raw["endpointURL"],
+        requestMethod=ApiRequestMethod(raw.get("requestMethod", "GET")),
+        requestSchema=build_api_schema(raw.get("requestSchema")),
+        responseSchema=build_api_schema(raw.get("responseSchema")),
+    )
+
+
 def create_api_service(raw: dict) -> ApiService:
     """Create or update an API Service and its collections/endpoints."""
     from metadata.sdk import client as get_client
 
     ometa = get_client().ometa
 
-    service = ometa.create_or_update(
-        CreateApiServiceRequest(
-            name=raw["serviceName"],
-            serviceType=ApiServiceType(raw["serviceType"]),
-            displayName=raw.get("displayName"),
-            description=raw.get("description"),
-        )
-    )
-    print(f"  Service: {service.fullyQualifiedName}")
+    service = ometa.create_or_update(build_api_service_request(raw))
+    print(f"  Service: {model_str(service.fullyQualifiedName)}")
 
     for coll_raw in raw.get("collections", []):
         collection = APICollections.create(
-            CreateAPICollectionRequest(
-                name=coll_raw["name"],
-                displayName=coll_raw.get("displayName"),
-                description=coll_raw.get("description"),
-                endpointURL=coll_raw.get("endpointURL"),
-                service=service.fullyQualifiedName,
-            )
+            build_api_collection_request(coll_raw, service.fullyQualifiedName)
         )
-        print(f"    Collection: {collection.fullyQualifiedName}")
+        print(f"    Collection: {model_str(collection.fullyQualifiedName)}")
 
         for ep_raw in coll_raw.get("endpoints", []):
             endpoint = APIEndpoints.create(
-                CreateAPIEndpointRequest(
-                    name=ep_raw["name"],
-                    displayName=ep_raw.get("displayName"),
-                    description=ep_raw.get("description"),
-                    apiCollection=collection.fullyQualifiedName,
-                    endpointURL=ep_raw["endpointURL"],
-                    requestMethod=ApiRequestMethod(
-                        ep_raw.get("requestMethod", "GET")
-                    ),
-                    requestSchema=build_api_schema(ep_raw.get("requestSchema")),
-                    responseSchema=build_api_schema(ep_raw.get("responseSchema")),
-                )
+                build_api_endpoint_request(ep_raw, collection.fullyQualifiedName)
             )
-            print(f"      Endpoint: {endpoint.fullyQualifiedName}")
+            print(f"      Endpoint: {model_str(endpoint.fullyQualifiedName)}")
 
     return service
 
@@ -169,15 +198,14 @@ def create_api_service(raw: dict) -> ApiService:
 # Step 2 — Create lineage edges from YAML
 # ------------------------------------------------------------------ #
 
-def build_column_lineage(raw_columns: Optional[list]) -> Optional[list[ColumnLineage]]:
+
+def build_column_lineage(raw_columns: list | None) -> list[ColumnLineage] | None:
     """Build column-level lineage with transformation functions."""
     if not raw_columns:
         return None
     return [
         ColumnLineage(
-            fromColumns=[
-                FullyQualifiedEntityName(col) for col in cl["fromColumns"]
-            ],
+            fromColumns=[FullyQualifiedEntityName(col) for col in cl["fromColumns"]],
             toColumn=FullyQualifiedEntityName(cl["toColumn"]),
             function=SqlFunction(cl["function"]) if cl.get("function") else None,
         )
@@ -185,14 +213,20 @@ def build_column_lineage(raw_columns: Optional[list]) -> Optional[list[ColumnLin
     ]
 
 
+def lineage_edge_fqns(edge: dict) -> tuple[str, str]:
+    """Return the upstream and downstream endpoint FQNs for one edge."""
+    from_ref = edge["from"]
+    to_ref = edge["to"]
+    return (
+        f"{from_ref['service']}.{from_ref['collection']}.{from_ref['endpoint']}",
+        f"{to_ref['service']}.{to_ref['collection']}.{to_ref['endpoint']}",
+    )
+
+
 def create_lineage(raw: dict) -> None:
     """Read lineage edges from YAML and register them in OpenMetadata."""
     for edge in raw.get("edges", []):
-        from_ref = edge["from"]
-        to_ref = edge["to"]
-
-        from_fqn = f"{from_ref['service']}.{from_ref['collection']}.{from_ref['endpoint']}"
-        to_fqn = f"{to_ref['service']}.{to_ref['collection']}.{to_ref['endpoint']}"
+        from_fqn, to_fqn = lineage_edge_fqns(edge)
 
         from_entity = APIEndpoints.retrieve_by_name(from_fqn)
         to_entity = APIEndpoints.retrieve_by_name(to_fqn)
@@ -220,39 +254,48 @@ def create_lineage(raw: dict) -> None:
 
         print(f"  Lineage: {from_fqn} → {to_fqn}")
         for cl in columns_lineage or []:
-            src = ", ".join(str(c) for c in (cl.fromColumns or []))
-            print(f"    {src} --[{cl.function}]--> {cl.toColumn}")
+            src = ", ".join(model_str(column) for column in (cl.fromColumns or []))
+            function = model_str(cl.function) if cl.function else ""
+            print(f"    {src} --[{function}]--> {model_str(cl.toColumn)}")
 
 
 # ------------------------------------------------------------------ #
 # Step 3 — Verify lineage
 # ------------------------------------------------------------------ #
 
-def verify_lineage() -> None:
-    """Fetch lineage back to confirm it was created."""
-    endpoint = APIEndpoints.retrieve_by_name(
-        "fulfillment-api.shipments.createShipment"
-    )
-    lineage = Lineage.get_entity_lineage(
-        entity_type=APIEndpoint,
-        entity_id=endpoint.id,
-        upstream_depth=2,
-        downstream_depth=2,
-    )
-    if lineage:
-        upstream = lineage.upstreamEdges or []
-        downstream = lineage.downstreamEdges or []
-        print(f"  createShipment — upstream edges: {len(upstream)}, downstream edges: {len(downstream)}")
-    else:
-        print("  No lineage found (unexpected)")
+
+def verify_lineage(raw: dict) -> None:
+    """Fetch lineage back and require every declarative edge to exist."""
+    verified = 0
+    for edge in raw.get("edges", []):
+        from_fqn, to_fqn = lineage_edge_fqns(edge)
+        from_endpoint = APIEndpoints.retrieve_by_name(from_fqn)
+        to_endpoint = APIEndpoints.retrieve_by_name(to_fqn)
+        lineage = Lineage.get_entity_lineage(
+            entity_type=APIEndpoint,
+            entity_id=to_endpoint.id,
+            upstream_depth=1,
+            downstream_depth=1,
+        )
+        from_id = model_str(from_endpoint.id)
+        to_id = model_str(to_endpoint.id)
+        found = lineage and any(
+            model_str(upstream.fromEntity) == from_id and model_str(upstream.toEntity) == to_id
+            for upstream in lineage.upstreamEdges or []
+        )
+        if not found:
+            raise RuntimeError(f"Missing lineage edge: {from_fqn} → {to_fqn}")
+        verified += 1
+    print(f"  Verified {verified} lineage edges")
 
 
 # ------------------------------------------------------------------ #
 # Main
 # ------------------------------------------------------------------ #
 
+
 def run() -> None:
-    configure(host=OM_HOST, jwt_token=OM_JWT_TOKEN)
+    configure_from_environment()
 
     print("\n1. Creating Orders API...")
     orders_raw = load_yaml("orders_api.yaml")
@@ -267,7 +310,7 @@ def run() -> None:
     create_lineage(lineage_raw)
 
     print("\n4. Verifying lineage...")
-    verify_lineage()
+    verify_lineage(lineage_raw)
 
     print("\nDone ✅")
 

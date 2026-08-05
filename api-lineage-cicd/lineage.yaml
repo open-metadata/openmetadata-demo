@@ -9,8 +9,8 @@
 edges:
   - description: |
       The Fulfillment API creates shipments based on new orders.
-      createOrder (Orders API) produces order_id and items which are
-      consumed by createShipment (Fulfillment API) to initiate picking.
+      createOrder (Orders API) produces the order identifier, shipping address,
+      and total amount used by createShipment (Fulfillment API).
     from:
       service: orders-api
       collection: orders
@@ -34,9 +34,13 @@ edges:
         toColumn: fulfillment-api.shipments.createShipment.requestSchema.order_id
         function: "IDENTITY()"
       - fromColumns:
-          - orders-api.orders.createOrder.responseSchema.status
-        toColumn: fulfillment-api.shipments.createShipment.responseSchema.status
-        function: "MAP_STATUS(order_status → shipment_status)"
+          - orders-api.orders.createOrder.responseSchema.shipping_address
+        toColumn: fulfillment-api.shipments.createShipment.requestSchema.warehouse_id
+        function: "ASSIGN_WAREHOUSE(shipping_address)"
+      - fromColumns:
+          - orders-api.orders.createOrder.responseSchema.total_amount
+        toColumn: fulfillment-api.shipments.createShipment.requestSchema.priority
+        function: "SELECT_PRIORITY(total_amount)"
 
   - description: |
       Shipment status lookups reference order details.

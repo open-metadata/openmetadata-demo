@@ -2,6 +2,10 @@
 
 Demonstrates using the OpenMetadata Python SDK 2.0 to register two REST API services and create lineage between their endpoints — all driven by declarative YAML files that can live alongside your API code in version control.
 
+> [!IMPORTANT]
+> This example targets `openmetadata-ingestion==2.0.0.0rc1`. Its tests validate generated models
+> and mocked SDK boundaries without contacting a live OpenMetadata server.
+
 ## Scenario
 
 An e-commerce platform has two internal APIs:
@@ -31,11 +35,15 @@ requirements.txt       # Python dependencies
 ## Usage
 
 ```bash
+cd api-lineage-cicd
 pip install -r requirements.txt
+
+export OPENMETADATA_HOST="http://localhost:8585/api"
+export OPENMETADATA_JWT_TOKEN="<personal-access-token>"
 python api_lineage_cicd.py
 ```
 
-Expected output:
+Expected output (column-mapping lines omitted):
 
 ```
 1. Creating Orders API...
@@ -55,7 +63,7 @@ Expected output:
   Lineage: orders-api.orders.getOrder → fulfillment-api.shipments.getShipment
 
 4. Verifying lineage...
-  createShipment — upstream edges: 1, downstream edges: 0
+  Verified 2 lineage edges
 
 Done ✅
 ```
@@ -69,11 +77,11 @@ overwrite those changes with the YAML values.
 
 This is by design — the YAML files are the **source of truth** for API definitions in this CI/CD pattern.
 
-### Preserving manual edits
+### Preserving Manual Edits
 
 If you want the pipeline to only push specific field changes without overwriting the rest, use
 `APIEndpoints.update()` instead of `APIEndpoints.create()`. Under the hood, `update()` performs a
-**JSON Merge Patch** (HTTP PATCH): it fetches the current entity, diffs it against the version you
+**JSON Patch** (HTTP PATCH): it fetches the current entity, diffs it against the version you
 provide, and only sends the fields that changed. Fields you don't touch — like a description edited
 in the UI — are left as-is.
 

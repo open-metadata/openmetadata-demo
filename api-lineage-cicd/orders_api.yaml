@@ -47,6 +47,12 @@ collections:
             - name: order_id
               dataType: STRING
               description: Server-assigned unique order identifier.
+            - name: shipping_address
+              dataType: STRING
+              description: Delivery address used to select a warehouse.
+            - name: total_amount
+              dataType: DOUBLE
+              description: Order total used to select a shipping priority.
             - name: status
               dataType: STRING
               description: Initial order status (e.g. PENDING).
