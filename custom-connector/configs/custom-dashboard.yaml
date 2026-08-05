@@ -1,0 +1,20 @@
+source:
+  type: custom-dashboard
+  serviceName: custom_dashboard_demo
+  serviceConnection:
+    config:
+      type: CustomDashboard
+      sourcePythonClass: openmetadata_demo_connectors.dashboard.CustomDashboardSource
+  sourceConfig:
+    config:
+      type: DashboardMetadata
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

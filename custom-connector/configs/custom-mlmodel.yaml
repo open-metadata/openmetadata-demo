@@ -1,0 +1,20 @@
+source:
+  type: custom-mlmodel
+  serviceName: custom_mlmodel_demo
+  serviceConnection:
+    config:
+      type: CustomMlModel
+      sourcePythonClass: openmetadata_demo_connectors.mlmodel.CustomMlModelSource
+  sourceConfig:
+    config:
+      type: MlModelMetadata
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

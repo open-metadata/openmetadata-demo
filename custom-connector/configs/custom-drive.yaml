@@ -1,0 +1,20 @@
+source:
+  type: custom-drive
+  serviceName: custom_drive_demo
+  serviceConnection:
+    config:
+      type: CustomDrive
+      sourcePythonClass: openmetadata_demo_connectors.drive.CustomDriveSource
+  sourceConfig:
+    config:
+      type: DriveMetadata
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}
