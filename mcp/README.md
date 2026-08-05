@@ -38,7 +38,7 @@ docker compose -f docker-compose-postgres.yml up --detach
 Once OpenMetadata is ready, run 
 
 ```
-curl -fsSL https://raw.githubusercontent.com/open-metadata/openmetadata-demo/main/postgres/docker/postgres-script.sql | docker exec -i openmetadata_postgresql psql -U postgres -d postgres
+curl -fsSL https://raw.githubusercontent.com/open-metadata/openmetadata-demo/main/mcp/resources/postgres-script.sql | docker exec -i openmetadata_postgresql psql -U postgres -d postgres
 ```
 
 | ![openmetadata-login.png](./images/openmetadata-login.png) |

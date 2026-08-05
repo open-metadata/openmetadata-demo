@@ -1,3 +1,0 @@
-query_text
-"CREATE TABLE actor_catalog AS SELECT first_name AS name, last_name AS surname from actor"
-"SELECT * from actor_catalog"
