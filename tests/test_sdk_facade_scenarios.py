@@ -7,6 +7,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
+from metadata.generated.schema.type.entityReference import EntityReference
 
 ROOT = Path(__file__).parents[1]
 
@@ -217,4 +218,135 @@ def test_storage_sets_parent_after_both_containers_exist(monkeypatch) -> None:
         "set_parent",
         "list_children",
         "list_ancestors",
+    ]
+
+
+TABLE_REFERENCE = EntityReference(
+    id="11111111-1111-1111-1111-111111111111",
+    type="table",
+    name="customers",
+    fullyQualifiedName="sample.database.schema.customers",
+)
+
+
+def test_governance_builds_valid_rc1_requests() -> None:
+    governance = load_scenario("governance-assets/governance_assets.py", "governance_assets")
+
+    requests = governance.build_requests("demo", TABLE_REFERENCE)
+
+    assert requests["tag"].classification.root == "demo_classification"
+    assert requests["term_one"].glossary.root == "demo_glossary"
+    assert requests["data_product"].domains[0].root == "demo_domain"
+    assert requests["data_product"].name.root == "demo_customer_product"
+    assert requests["metric_one"].metricType.value == "COUNT"
+    assert requests["contract"].entity.type == "table"
+
+
+def test_governance_refuses_foreign_contract_before_create(monkeypatch) -> None:
+    governance = load_scenario(
+        "governance-assets/governance_assets.py", "governance_assets_collision"
+    )
+    table = SimpleNamespace(
+        id="11111111-1111-1111-1111-111111111111",
+        name="customers",
+        entityType="table",
+        fullyQualifiedName="sample.database.schema.customers",
+    )
+    monkeypatch.setattr(governance.Tables, "retrieve_by_name", lambda *_args, **_kwargs: table)
+    monkeypatch.setattr(
+        governance.DataContracts,
+        "get_by_entity",
+        lambda *_: SimpleNamespace(description="Created elsewhere"),
+    )
+    monkeypatch.setattr(
+        governance,
+        "owned_upsert",
+        lambda *_: (_ for _ in ()).throw(AssertionError("must not mutate")),
+    )
+
+    with pytest.raises(RuntimeError, match="foreign data contract"):
+        governance.run_scenario("demo", "sample.database.schema.customers")
+
+
+def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
+    governance = load_scenario("governance-assets/governance_assets.py", "governance_assets_order")
+    calls: list[str] = []
+    table = SimpleNamespace(
+        id="11111111-1111-1111-1111-111111111111",
+        name="customers",
+        entityType="table",
+        fullyQualifiedName="sample.database.schema.customers",
+    )
+
+    def fake_upsert(facade, fqn, _request, _marker):
+        calls.append(facade.__name__)
+        return SimpleNamespace(
+            id="11111111-1111-1111-1111-111111111111",
+            name=fqn.rsplit(".", 1)[-1],
+            entityType=facade.__name__.lower(),
+            fullyQualifiedName=fqn,
+            description=governance.ownership_marker("demo"),
+        )
+
+    monkeypatch.setattr(governance.Tables, "retrieve_by_name", lambda *_args, **_kwargs: table)
+    monkeypatch.setattr(governance, "owned_upsert", fake_upsert)
+    monkeypatch.setattr(
+        governance.GlossaryTerms,
+        "add_relation",
+        lambda *_args, **_kwargs: calls.append("add_relation"),
+    )
+    monkeypatch.setattr(
+        governance.GlossaryTerms,
+        "relations_graph",
+        lambda *_args, **_kwargs: calls.append("relations_graph") or {},
+    )
+    monkeypatch.setattr(
+        governance.Metrics,
+        "add_related_metrics",
+        lambda *_: calls.append("add_related_metrics"),
+    )
+    monkeypatch.setattr(
+        governance.DataProducts,
+        "add_assets",
+        lambda *_: calls.append("add_assets") or {},
+    )
+    monkeypatch.setattr(
+        governance.DataContracts,
+        "validate_request",
+        lambda *_: calls.append("validate_request"),
+    )
+    monkeypatch.setattr(governance.DataContracts, "get_by_entity", lambda *_: None)
+
+    class Export:
+        def as_yaml(self):
+            return self
+
+        def execute(self):
+            calls.append("export_odcs")
+
+    monkeypatch.setattr(
+        governance.DataContracts,
+        "export_odcs",
+        lambda *_: Export(),
+    )
+
+    governance.run_scenario("demo", "sample.database.schema.customers")
+
+    assert calls == [
+        "Classifications",
+        "Tags",
+        "Glossaries",
+        "GlossaryTerms",
+        "GlossaryTerms",
+        "add_relation",
+        "relations_graph",
+        "Domains",
+        "DataProducts",
+        "Metrics",
+        "Metrics",
+        "add_related_metrics",
+        "add_assets",
+        "validate_request",
+        "DataContracts",
+        "export_odcs",
     ]
