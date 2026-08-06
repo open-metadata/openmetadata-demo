@@ -406,3 +406,88 @@ def test_identity_reads_settings_without_mutating_them(monkeypatch) -> None:
         "glossary_relation_settings",
         "glossary_relation_types",
     ]
+
+
+def test_data_quality_builds_canonical_entity_link_and_requests() -> None:
+    quality = load_scenario("data-quality/data_quality.py", "data_quality")
+
+    requests = quality.build_requests(
+        "demo",
+        "sample.database.schema.customers",
+        "tableRowCountToEqual",
+    )
+
+    assert quality.table_entity_link("sample.database.schema.customers") == (
+        "<#E::table::sample.database.schema.customers>"
+    )
+    assert requests["suite"].name.root == "demo_quality_suite"
+    assert requests["case"].testDefinition.root == "tableRowCountToEqual"
+    assert requests["case"].parameterValues[0].value == "0"
+
+
+def test_data_quality_reads_parents_before_mutation(monkeypatch) -> None:
+    quality = load_scenario("data-quality/data_quality.py", "data_quality_order")
+    calls: list[str] = []
+    table_fqn = "sample.database.schema.customers"
+
+    monkeypatch.setattr(
+        quality.Tables,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: (
+            calls.append("Tables") or SimpleNamespace(fullyQualifiedName=table_fqn)
+        ),
+    )
+    monkeypatch.setattr(
+        quality.TestDefinitions,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: (
+            calls.append("TestDefinitions")
+            or SimpleNamespace(fullyQualifiedName="tableRowCountToEqual")
+        ),
+    )
+
+    def fake_upsert(facade, fqn, _request, _marker):
+        calls.append(facade.__name__)
+        return SimpleNamespace(
+            id="11111111-1111-1111-1111-111111111111",
+            fullyQualifiedName=fqn,
+        )
+
+    monkeypatch.setattr(quality, "owned_upsert", fake_upsert)
+    monkeypatch.setattr(
+        quality.TestCases,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: calls.append("retrieve_result") or None,
+    )
+    monkeypatch.setattr(
+        quality.TestCases,
+        "list",
+        lambda **_kwargs: calls.append("list_results") or [],
+    )
+
+    quality.run_scenario(table_fqn, "tableRowCountToEqual", "demo")
+
+    assert calls == [
+        "Tables",
+        "TestDefinitions",
+        "TestSuites",
+        "TestCases",
+        "retrieve_result",
+        "list_results",
+    ]
+
+
+def test_data_quality_rejects_missing_parents(monkeypatch) -> None:
+    quality = load_scenario("data-quality/data_quality.py", "data_quality_missing")
+    monkeypatch.setattr(
+        quality.Tables,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: None,
+    )
+
+    with pytest.raises(RuntimeError, match="table not found"):
+        quality.run_scenario(
+            "missing.database.schema.table",
+            "tableRowCountToEqual",
+            "demo",
+        )
