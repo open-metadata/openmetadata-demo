@@ -23,9 +23,17 @@ MAINTAINED_ROOTS = (
     ROOT / "api-lineage-cicd",
     ROOT / "ingestion-automation",
     ROOT / "mcp",
+    ROOT / "catalog-assets",
+    ROOT / "analytics-assets",
+    ROOT / "storage-assets",
+    ROOT / "governance-assets",
+    ROOT / "identity-and-settings",
+    ROOT / "data-quality",
 )
 CONTRACT_FILES = (
     ROOT / "README.md",
+    ROOT / "requirements-sdk.txt",
+    ROOT / "SDK_FACADE_LIMITATIONS.md",
     ROOT / "pyproject.toml",
     ROOT / ".lychee.toml",
 )

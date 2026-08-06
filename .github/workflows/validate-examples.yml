@@ -30,6 +30,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: |
+            requirements-sdk.txt
             custom-connector/pyproject.toml
             custom-graphql/pyproject.toml
             dynamic_csv_importer/requirements.txt
@@ -39,6 +40,7 @@ jobs:
       - name: Install exact OpenMetadata RC and test dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install --requirement requirements-sdk.txt
           python -m pip install --editable './custom-connector[test]'
           python -m pip install --editable ./custom-graphql
           python -m pip install \
@@ -63,6 +65,12 @@ jobs:
           dynamic_csv_importer
           api-lineage-cicd
           ingestion-automation
+          catalog-assets
+          analytics-assets
+          storage-assets
+          governance-assets
+          identity-and-settings
+          data-quality
           tests
 
       - name: Lint and check formatting
@@ -70,7 +78,7 @@ jobs:
           ruff check .
           ruff format --check .
 
-      - name: Run model, configuration, import, and request tests
+      - name: Run offline RC1 model, facade, import, and request tests
         run: pytest
 
   node:

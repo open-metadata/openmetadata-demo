@@ -196,15 +196,19 @@ def run_scenario(namespace: str, parents: Mapping[str, str]) -> None:
         "search_index": f"{parents['search_service']}.{namespace}_customers_index",
     }
 
-    steps = (
-        (DashboardServices, "service"),
-        (Charts, "chart"),
-        (DashboardDataModels, "data_model"),
-        (Dashboards, "dashboard"),
-        (MLModels, "ml_model"),
-        (Pipelines, "pipeline"),
-    )
-    entities = [owned_upsert(facade, fqns[key], requests[key], marker) for facade, key in steps]
+    entities = [
+        owned_upsert(DashboardServices, fqns["service"], requests["service"], marker),
+        owned_upsert(Charts, fqns["chart"], requests["chart"], marker),
+        owned_upsert(
+            DashboardDataModels,
+            fqns["data_model"],
+            requests["data_model"],
+            marker,
+        ),
+        owned_upsert(Dashboards, fqns["dashboard"], requests["dashboard"], marker),
+        owned_upsert(MLModels, fqns["ml_model"], requests["ml_model"], marker),
+        owned_upsert(Pipelines, fqns["pipeline"], requests["pipeline"], marker),
+    ]
 
     status = PipelineStatus(
         timestamp=STATUS_TIMESTAMP,

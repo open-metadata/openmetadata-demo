@@ -1,6 +1,17 @@
 version: 2
 updates:
   - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      sdk-facade-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
     directory: /custom-connector
     schedule:
       interval: weekly
