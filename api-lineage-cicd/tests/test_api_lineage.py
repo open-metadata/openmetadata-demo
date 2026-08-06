@@ -4,16 +4,20 @@ from types import SimpleNamespace
 
 import pytest
 from api_lineage_cicd import (
+    APICollections,
     APIEndpoints,
     Lineage,
+    apply_api_assets,
+    build_api_assets,
     build_api_collection_request,
     build_api_endpoint_request,
     build_api_schema,
-    build_api_service_request,
     build_column_lineage,
     configure_from_environment,
     create_lineage,
     load_yaml,
+    ownership_marker,
+    validate_environment,
     verify_lineage,
 )
 from metadata.generated.schema.type.entityLineage import Edge
@@ -49,6 +53,16 @@ def test_client_configuration_respects_an_explicit_empty_mapping(monkeypatch) ->
         configure_from_environment({})
 
 
+def test_environment_requires_namespace_and_existing_services() -> None:
+    with pytest.raises(RuntimeError, match="OPENMETADATA_DEMO_NAMESPACE"):
+        validate_environment(
+            {
+                "OPENMETADATA_HOST": "https://metadata.example.com/api",
+                "OPENMETADATA_JWT_TOKEN": "test-token",
+            }
+        )
+
+
 def test_api_yaml_builds_valid_2_0_schema_models() -> None:
     """Every endpoint schema in the checked-in YAML should validate."""
     orders = load_yaml("orders_api.yaml")
@@ -66,22 +80,93 @@ def test_api_yaml_builds_valid_2_0_schema_models() -> None:
 
 
 def test_api_yaml_builds_valid_2_0_create_requests() -> None:
-    """Declarative service, collection, and endpoint inputs must all validate."""
+    """Declarative collection and endpoint inputs must all validate."""
     request_counts = {}
     for filename in ("orders_api.yaml", "fulfillment_api.yaml"):
         raw = load_yaml(filename)
-        service_request = build_api_service_request(raw)
-        requests = [service_request]
+        requests = []
         for collection in raw["collections"]:
             collection_fqn = f"{raw['serviceName']}.{collection['name']}"
-            requests.append(build_api_collection_request(collection, raw["serviceName"]))
+            requests.append(
+                build_api_collection_request(
+                    collection,
+                    raw["serviceName"],
+                    ownership_marker("demo"),
+                )
+            )
             requests.extend(
-                build_api_endpoint_request(endpoint, collection_fqn)
+                build_api_endpoint_request(
+                    endpoint,
+                    collection_fqn,
+                    ownership_marker("demo"),
+                )
                 for endpoint in collection["endpoints"]
             )
         request_counts[filename] = len(requests)
 
-    assert request_counts == {"orders_api.yaml": 4, "fulfillment_api.yaml": 4}
+    assert request_counts == {"orders_api.yaml": 3, "fulfillment_api.yaml": 3}
+
+
+def test_api_assets_use_supplied_parent_and_marker() -> None:
+    assets = build_api_assets(
+        load_yaml("orders_api.yaml"),
+        "existing-orders-service",
+        ownership_marker("demo"),
+    )
+
+    assert assets[0][0] is APICollections
+    assert assets[0][1] == "existing-orders-service.orders"
+    assert assets[0][2].service.root == "existing-orders-service"
+    assert ownership_marker("demo") in assets[0][2].description.root
+    assert assets[1][0] is APIEndpoints
+    assert assets[1][1].startswith("existing-orders-service.orders.")
+
+
+def test_api_assets_refuse_foreign_collisions(monkeypatch) -> None:
+    assets = build_api_assets(
+        load_yaml("orders_api.yaml"),
+        "existing-orders-service",
+        ownership_marker("demo"),
+    )
+    monkeypatch.setattr(
+        APICollections,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: SimpleNamespace(description="Created elsewhere"),
+    )
+
+    with pytest.raises(RuntimeError, match="Refusing to overwrite"):
+        apply_api_assets(assets, ownership_marker("demo"))
+
+
+def test_missing_parent_service_has_a_clear_error(monkeypatch) -> None:
+    assets = build_api_assets(
+        load_yaml("orders_api.yaml"),
+        "missing-orders-service",
+        ownership_marker("demo"),
+    )
+    monkeypatch.setattr(APICollections, "retrieve_by_name", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        APICollections,
+        "create",
+        lambda *_: (_ for _ in ()).throw(LookupError("not found")),
+    )
+
+    with pytest.raises(RuntimeError, match="missing-orders-service"):
+        apply_api_assets(assets, ownership_marker("demo"))
+
+
+def test_lineage_replaces_logical_service_names_with_supplied_fqns() -> None:
+    mappings = {
+        "orders-api": "existing-orders-service",
+        "fulfillment-api": "existing-fulfillment-service",
+    }
+    edge = load_yaml("lineage.yaml")["edges"][0]
+
+    columns = build_column_lineage(edge["columnLineage"], mappings)
+
+    assert columns is not None
+    assert columns[0].fromColumns[0].root.startswith("existing-orders-service.")
+    assert columns[0].toColumn.root.startswith("existing-fulfillment-service.")
 
 
 def test_lineage_yaml_builds_column_lineage_models() -> None:
