@@ -5,9 +5,9 @@
 
 This scenario directly demonstrates `StorageServices` and `Containers`. It
 creates a `CustomStorage` service, a root container, and a child container. It
-then uses `Containers.set_parent()`, `Containers.list_children()`, and
-`Containers.list_ancestors()` to establish and read the hierarchy. No external
-storage system is required.
+creates the child with its parent reference, then uses
+`Containers.list_children()` and `Containers.list_ancestors()` to read the
+hierarchy. No external storage system is required.
 
 ## Run
 
@@ -23,7 +23,10 @@ The namespace must match `^[a-z][a-z0-9_]{2,31}$`. Entities carry
 `[openmetadata-demo:<namespace>:storage-assets]`. Full PUT upserts are allowed
 only for exact marker matches; foreign collisions abort.
 
-The child starts at the service root and is then re-parented. A partial run is
-safe to retry: the script accepts either the temporary root-level child or the
-already nested owned child. It never deletes containers, clears parents, or
-performs automatic cleanup. Output is limited to entity FQNs and IDs.
+The child request is built after the owned root exists because its parent
+reference requires the root ID. A partial run is safe to retry. The script
+never deletes containers, clears parents, or performs automatic cleanup.
+Output is limited to entity FQNs and IDs.
+
+`Containers.set_parent()` is not used because its RC1 server path is broken;
+see [`SDK_FACADE_LIMITATIONS.md`](../SDK_FACADE_LIMITATIONS.md).

@@ -46,3 +46,19 @@ Do not execute those facade mutations with RC1. This repository intentionally
 does not modify the SDK route map and does not ship a private client workaround.
 No REST fallback is provided. These three examples are model-only until the
 upstream SDK exposes working route resolution; they are not live-runnable.
+
+## Live Method Limitations
+
+Three route-backed helper methods also fail against the matching RC1 server or
+SDK. The affected facades remain live-runnable through their other public
+methods.
+
+| Method | RC1 behavior | Example behavior |
+| --- | --- | --- |
+| `Containers.set_parent()` | The server-side re-parent PATCH raises an internal error while updating legacy feed links | `storage-assets` supplies the parent in `CreateContainerRequest`, then reads children and ancestors |
+| `Metrics.add_related_metrics()` | The helper builds a plain list where the RC1 patch builder expects `EntityReferenceList`, so the patch is skipped | `governance-assets` deep-copies the metric and calls `Metrics.update()` |
+| `DataContracts.validate_request()` | The validation endpoint returns a preview shape that the RC1 SDK tries to parse as `DataContractResult` | `governance-assets` validates `CreateDataContractRequest` locally, then creates and retrieves the contract |
+
+The examples do not call these broken helpers, hide their failures, patch the
+SDK, or add REST fallbacks. These limits were reproduced with the official
+`2.0.0-rc1` Docker images and the exact Python dependency above.

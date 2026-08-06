@@ -6,8 +6,8 @@
 This scenario demonstrates `Classifications`, `Tags`, `Glossaries`,
 `GlossaryTerms`, `Domains`, `DataProducts`, `Metrics`, and `DataContracts`.
 It creates related terms and metrics, adds a metric to a data product, validates
-a table contract, retrieves that contract by target entity, and exercises ODCS
-YAML export without printing the exported data.
+a table contract model, retrieves the created contract by target entity, and
+exercises ODCS YAML export without printing the exported data.
 
 Supply an existing table as the contract target:
 
@@ -27,3 +27,9 @@ before creating governance entities. The supplied table is never modified.
 All demo-created entities use full PUT upserts guarded by that exact marker.
 There is no hard delete, result deletion, ODCS import, or automatic cleanup.
 Output contains only entity FQNs and IDs. CI does not run a live server.
+
+The scenario uses a deep-copied `Metrics.update()` for metric relationships and
+relies on request-model validation before creating the contract. The RC1
+`Metrics.add_related_metrics()` and `DataContracts.validate_request()` helper
+paths are broken; see
+[`SDK_FACADE_LIMITATIONS.md`](../SDK_FACADE_LIMITATIONS.md).

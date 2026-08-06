@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from metadata.generated.schema.api.tests.createTestCase import CreateTestCaseRequest
@@ -24,6 +24,7 @@ from metadata.sdk import (
 NAMESPACE_PATTERN = re.compile(r"^[a-z][a-z0-9_]{2,31}$")
 SCENARIO = "data-quality"
 SUPPORTED_DEFINITION = "tableRowCountToEqual"
+TEST_CASE_REQUIRED_FIELDS = ("testDefinition", "testSuite")
 REQUIRED_ENV = (
     "OPENMETADATA_HOST",
     "OPENMETADATA_JWT_TOKEN",
@@ -64,9 +65,10 @@ def owned_upsert(
     fqn: str,
     request: Any,
     marker: str,
+    fields: Sequence[str] | None = None,
 ) -> Any:
     """PUT an absent or exactly owned test entity; refuse foreign collisions."""
-    existing = facade.retrieve_by_name(fqn, nullable=True)
+    existing = facade.retrieve_by_name(fqn, fields=fields, nullable=True)
     description = model_str(getattr(existing, "description", "")) if existing else ""
     if existing is not None and marker not in description:
         raise RuntimeError(f"Refusing to overwrite foreign entity: {fqn}")
@@ -111,12 +113,19 @@ def run_scenario(table_fqn: str, definition_fqn: str, namespace: str) -> None:
     suite_fqn = f"{namespace}_quality_suite"
     case_fqn = f"{table_fqn}.{namespace}_row_count_is_zero"
     suite = owned_upsert(TestSuites, suite_fqn, requests["suite"], marker)
-    test_case = owned_upsert(TestCases, case_fqn, requests["case"], marker)
+    test_case = owned_upsert(
+        TestCases,
+        case_fqn,
+        requests["case"],
+        marker,
+        fields=TEST_CASE_REQUIRED_FIELDS,
+    )
 
-    TestCases.retrieve_by_name(case_fqn, fields=["testCaseResult"])
+    result_fields = [*TEST_CASE_REQUIRED_FIELDS, "testCaseResult"]
+    TestCases.retrieve_by_name(case_fqn, fields=result_fields)
     TestCases.list(
         limit=10,
-        fields=["testCaseResult"],
+        fields=result_fields,
         filters={"entityLink": table_entity_link(table_fqn)},
     )
     for entity in (suite, test_case):

@@ -21,7 +21,7 @@ export OPENMETADATA_JWT_TOKEN="<personal-access-token>"
 python -m dynamic_csv_importer.csv_importer \
   --csv-path dynamic_csv_importer/sample_dbt_jaffle.csv \
   --table-fqn sample.database.schema.customers \
-  --dashboard-data-model-fqn sample_dashboard.customer_model \
+  --dashboard-data-model-fqn sample_dashboard.model.customer_model \
   --report-only
 ```
 

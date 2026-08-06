@@ -157,8 +157,16 @@ def test_analytics_builds_valid_rc1_requests() -> None:
     assert requests["service"].serviceType.value == "CustomDashboard"
     assert requests["data_model"].columns[0].dataType.value == "BIGINT"
     assert requests["dashboard"].charts[0].root.endswith(".demo_chart")
+    assert requests["dashboard"].dataModels[0].root == (
+        "demo_dashboard_service.model.demo_data_model"
+    )
     assert requests["ml_model"].mlFeatures[0].name.root == "customer_age"
     assert requests["pipeline"].tasks[0].name == "extract"
+    assert [task.name for task in requests["pipeline_status"].taskStatus] == [
+        "extract",
+        "transform",
+        "publish",
+    ]
     assert requests["query"].service.root == "sample_database_service"
     assert requests["search_index"].fields[0].dataType.value == "TEXT"
 
@@ -227,7 +235,7 @@ def test_storage_builds_valid_rc1_requests() -> None:
     assert requests["child"].parent is None
 
 
-def test_storage_sets_parent_after_both_containers_exist(monkeypatch) -> None:
+def test_storage_creates_parent_before_nested_child(monkeypatch) -> None:
     storage = load_scenario("storage-assets/storage_assets.py", "storage_assets_order")
     calls: list[str] = []
 
@@ -243,13 +251,8 @@ def test_storage_sets_parent_after_both_containers_exist(monkeypatch) -> None:
     monkeypatch.setattr(storage, "owned_upsert", fake_upsert)
     monkeypatch.setattr(
         storage.Containers,
-        "retrieve_by_name",
-        lambda *_args, **_kwargs: None,
-    )
-    monkeypatch.setattr(
-        storage.Containers,
         "set_parent",
-        lambda *_: calls.append("set_parent"),
+        lambda *_: (_ for _ in ()).throw(AssertionError("RC1 re-parent PATCH is broken")),
     )
     monkeypatch.setattr(
         storage.Containers,
@@ -267,8 +270,7 @@ def test_storage_sets_parent_after_both_containers_exist(monkeypatch) -> None:
     assert calls == [
         "StorageServices:demo_storage_service",
         "Containers:demo_storage_service.demo_exports",
-        "Containers:demo_storage_service.demo_daily_exports",
-        "set_parent",
+        "Containers:demo_storage_service.demo_exports.demo_daily_exports",
         "list_children",
         "list_ancestors",
     ]
@@ -292,6 +294,7 @@ def test_governance_builds_valid_rc1_requests() -> None:
     assert requests["data_product"].domains[0].root == "demo_domain"
     assert requests["data_product"].name.root == "demo_customer_product"
     assert requests["metric_one"].metricType.value == "COUNT"
+    assert requests["metric_one"].domains == ["demo_domain"]
     assert requests["contract"].entity.type == "table"
 
 
@@ -333,13 +336,15 @@ def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
 
     def fake_upsert(facade, fqn, _request, _marker):
         calls.append(facade.__name__)
-        return SimpleNamespace(
+        entity = SimpleNamespace(
             id="11111111-1111-1111-1111-111111111111",
             name=fqn.rsplit(".", 1)[-1],
             entityType=facade.__name__.lower(),
             fullyQualifiedName=fqn,
             description=governance.ownership_marker("demo"),
         )
+        entity.model_copy = lambda **_: SimpleNamespace(**vars(entity))
+        return entity
 
     monkeypatch.setattr(governance.Tables, "retrieve_by_name", lambda *_args, **_kwargs: table)
     monkeypatch.setattr(governance, "owned_upsert", fake_upsert)
@@ -356,7 +361,12 @@ def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
     monkeypatch.setattr(
         governance.Metrics,
         "add_related_metrics",
-        lambda *_: calls.append("add_related_metrics"),
+        lambda *_: (_ for _ in ()).throw(AssertionError("RC1 helper builds an invalid patch")),
+    )
+    monkeypatch.setattr(
+        governance.Metrics,
+        "update",
+        lambda entity: calls.append("update_metric_relation") or entity,
     )
     monkeypatch.setattr(
         governance.DataProducts,
@@ -366,7 +376,9 @@ def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
     monkeypatch.setattr(
         governance.DataContracts,
         "validate_request",
-        lambda *_: calls.append("validate_request"),
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("RC1 validation response does not match its generated model")
+        ),
     )
     monkeypatch.setattr(governance.DataContracts, "get_by_entity", lambda *_: None)
 
@@ -397,9 +409,8 @@ def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
         "DataProducts",
         "Metrics",
         "Metrics",
-        "add_related_metrics",
+        "update_metric_relation",
         "add_assets",
-        "validate_request",
         "DataContracts",
         "export_odcs",
     ]
@@ -499,8 +510,10 @@ def test_data_quality_reads_parents_before_mutation(monkeypatch) -> None:
         ),
     )
 
-    def fake_upsert(facade, fqn, _request, _marker):
+    def fake_upsert(facade, fqn, _request, _marker, **kwargs):
         calls.append(facade.__name__)
+        if facade is quality.TestCases:
+            assert kwargs["fields"] == ("testDefinition", "testSuite")
         return SimpleNamespace(
             id="11111111-1111-1111-1111-111111111111",
             fullyQualifiedName=fqn,
@@ -510,12 +523,14 @@ def test_data_quality_reads_parents_before_mutation(monkeypatch) -> None:
     monkeypatch.setattr(
         quality.TestCases,
         "retrieve_by_name",
-        lambda *_args, **_kwargs: calls.append("retrieve_result") or None,
+        lambda *_args, **kwargs: (
+            calls.append(f"retrieve_result:{','.join(kwargs['fields'])}") or None
+        ),
     )
     monkeypatch.setattr(
         quality.TestCases,
         "list",
-        lambda **_kwargs: calls.append("list_results") or [],
+        lambda **kwargs: calls.append(f"list_results:{','.join(kwargs['fields'])}") or [],
     )
 
     quality.run_scenario(table_fqn, "tableRowCountToEqual", "demo")
@@ -525,8 +540,8 @@ def test_data_quality_reads_parents_before_mutation(monkeypatch) -> None:
         "TestDefinitions",
         "TestSuites",
         "TestCases",
-        "retrieve_result",
-        "list_results",
+        "retrieve_result:testDefinition,testSuite,testCaseResult",
+        "list_results:testDefinition,testSuite,testCaseResult",
     ]
 
 

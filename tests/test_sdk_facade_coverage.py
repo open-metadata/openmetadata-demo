@@ -153,3 +153,20 @@ def test_facade_scripts_configure_the_sdk_only_in_main() -> None:
             )
         }
         assert callers == {"main"}, path
+
+
+def test_rc1_broken_helpers_are_not_presented_as_working() -> None:
+    """Keep live examples on the public facade paths that work in exact RC1."""
+    storage = ROOT / "storage-assets/storage_assets.py"
+    governance = ROOT / "governance-assets/governance_assets.py"
+    limitation = (ROOT / "SDK_FACADE_LIMITATIONS.md").read_text()
+
+    assert "set_parent" not in direct_methods(storage, "Containers")
+    assert "add_related_metrics" not in direct_methods(governance, "Metrics")
+    assert "validate_request" not in direct_methods(governance, "DataContracts")
+    for method in (
+        "Containers.set_parent()",
+        "Metrics.add_related_metrics()",
+        "DataContracts.validate_request()",
+    ):
+        assert method in limitation

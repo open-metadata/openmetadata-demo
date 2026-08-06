@@ -32,6 +32,7 @@ from metadata.generated.schema.entity.data.metric import (
 from metadata.generated.schema.entity.domains.domain import DomainType
 from metadata.generated.schema.type.basic import Markdown
 from metadata.generated.schema.type.entityReference import EntityReference
+from metadata.generated.schema.type.entityReferenceList import EntityReferenceList
 from metadata.ingestion.ometa.utils import model_str
 from metadata.sdk import (
     Classifications,
@@ -137,6 +138,7 @@ def build_requests(
             metricType=MetricType.COUNT,
             unitOfMeasurement=UnitOfMeasurement.COUNT,
             metricExpression=MetricExpression(language=Language.SQL, code="COUNT(*)"),
+            domains=[domain],
         ),
         "metric_two": CreateMetricRequest(
             name=f"{namespace}_active_customer_rate",
@@ -147,6 +149,7 @@ def build_requests(
                 language=Language.SQL,
                 code="100 * SUM(CASE WHEN is_active THEN 1 ELSE 0 END) / COUNT(*)",
             ),
+            domains=[domain],
         ),
         "contract": CreateDataContractRequest(
             name=f"{namespace}_customer_contract",
@@ -236,11 +239,13 @@ def run_scenario(namespace: str, table_fqn: str) -> None:
         marker,
     )
     entities.extend([metric_one, metric_two])
-    Metrics.add_related_metrics(metric_one.id, [metric_two.id])
+    related_metric = EntityReference(**Metrics.to_entity_reference(metric_two))
+    metric_with_relation = metric_one.model_copy(deep=True)
+    metric_with_relation.relatedMetrics = EntityReferenceList(root=[related_metric])
+    metric_one = Metrics.update(metric_with_relation)
     metric_reference = EntityReference(**Metrics.to_entity_reference(metric_one))
     DataProducts.add_assets(data_product_fqn, [metric_reference])
 
-    DataContracts.validate_request(requests["contract"])
     contract = owned_upsert(
         DataContracts,
         contract_fqn,

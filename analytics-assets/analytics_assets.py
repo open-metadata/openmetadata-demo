@@ -31,6 +31,7 @@ from metadata.generated.schema.entity.data.pipeline import (
     PipelineStatus,
     StatusType,
     Task,
+    TaskStatus,
 )
 from metadata.generated.schema.entity.data.searchIndex import (
     DataType as SearchDataType,
@@ -110,7 +111,7 @@ def build_requests(namespace: str, parents: Mapping[str, str]) -> dict[str, Any]
     marker = ownership_marker(namespace)
     dashboard_service = f"{namespace}_dashboard_service"
     chart_fqn = f"{dashboard_service}.{namespace}_chart"
-    data_model_fqn = f"{dashboard_service}.{namespace}_data_model"
+    data_model_fqn = f"{dashboard_service}.model.{namespace}_data_model"
 
     return {
         "service": CreateDashboardServiceRequest(
@@ -162,6 +163,15 @@ def build_requests(namespace: str, parents: Mapping[str, str]) -> dict[str, Any]
                 Task(name="publish"),
             ],
         ),
+        "pipeline_status": PipelineStatus(
+            timestamp=STATUS_TIMESTAMP,
+            executionStatus=StatusType.Successful,
+            executionId=f"{namespace}-demo-run",
+            taskStatus=[
+                TaskStatus(name=name, executionStatus=StatusType.Successful)
+                for name in ("extract", "transform", "publish")
+            ],
+        ),
         "query": CreateQueryRequest(
             name=f"{namespace}_active_customers",
             description=Markdown(root=f"{marker} Demo analytics query."),
@@ -188,7 +198,7 @@ def run_scenario(namespace: str, parents: Mapping[str, str]) -> None:
     fqns = {
         "service": dashboard_service,
         "chart": f"{dashboard_service}.{namespace}_chart",
-        "data_model": f"{dashboard_service}.{namespace}_data_model",
+        "data_model": f"{dashboard_service}.model.{namespace}_data_model",
         "dashboard": f"{dashboard_service}.{namespace}_dashboard",
         "ml_model": f"{parents['ml_model_service']}.{namespace}_churn_model",
         "pipeline": f"{parents['pipeline_service']}.{namespace}_customer_pipeline",
@@ -210,12 +220,7 @@ def run_scenario(namespace: str, parents: Mapping[str, str]) -> None:
         owned_upsert(Pipelines, fqns["pipeline"], requests["pipeline"], marker),
     ]
 
-    status = PipelineStatus(
-        timestamp=STATUS_TIMESTAMP,
-        executionStatus=StatusType.Successful,
-        executionId=f"{namespace}-demo-run",
-    )
-    Pipelines.add_pipeline_status(fqns["pipeline"], status)
+    Pipelines.add_pipeline_status(fqns["pipeline"], requests["pipeline_status"])
     Pipelines.list_pipeline_statuses(
         fqns["pipeline"],
         start_ts=STATUS_TIMESTAMP - 1,

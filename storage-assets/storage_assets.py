@@ -80,19 +80,12 @@ def build_requests(namespace: str) -> dict[str, Any]:
     }
 
 
-def _owned_description(entity: Any, marker: str, fqn: str) -> None:
-    description = model_str(getattr(entity, "description", ""))
-    if marker not in description:
-        raise RuntimeError(f"Refusing to overwrite foreign entity: {fqn}")
-
-
 def run_scenario(namespace: str) -> None:
-    """Create service and containers before establishing their hierarchy."""
+    """Create a service and parent-backed containers before reading their hierarchy."""
     requests = build_requests(namespace)
     marker = ownership_marker(namespace)
     service_fqn = f"{namespace}_storage_service"
     root_fqn = f"{service_fqn}.{namespace}_exports"
-    temporary_child_fqn = f"{service_fqn}.{namespace}_daily_exports"
     nested_child_fqn = f"{root_fqn}.{namespace}_daily_exports"
 
     service = owned_upsert(
@@ -102,20 +95,9 @@ def run_scenario(namespace: str) -> None:
         marker,
     )
     root = owned_upsert(Containers, root_fqn, requests["root"], marker)
-
-    child = Containers.retrieve_by_name(nested_child_fqn, nullable=True)
-    if child is None:
-        child = owned_upsert(
-            Containers,
-            temporary_child_fqn,
-            requests["child"],
-            marker,
-        )
-    else:
-        _owned_description(child, marker, nested_child_fqn)
-
     parent = EntityReference(**Containers.to_entity_reference(root))
-    Containers.set_parent(child.id, parent)
+    child_request = requests["child"].model_copy(deep=True, update={"parent": parent})
+    child = owned_upsert(Containers, nested_child_fqn, child_request, marker)
     Containers.list_children(root_fqn, limit=100, offset=0)
     Containers.list_ancestors(nested_child_fqn)
 
