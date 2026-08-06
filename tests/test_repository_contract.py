@@ -219,3 +219,25 @@ def test_mcp_seed_credentials_match_the_workshop() -> None:
     assert "mcp/resources/postgres-script.sql" in workshop
     assert "-v ON_ERROR_STOP=1" in workshop
     assert "`openmetadata_password`" in workshop
+
+
+def test_root_catalog_states_the_facade_scope_and_validation_boundary() -> None:
+    """The customer entry point must describe exactly what this RC catalog proves."""
+    readme = (ROOT / "README.md").read_text()
+
+    for path in (
+        "catalog-assets/",
+        "analytics-assets/",
+        "storage-assets/",
+        "governance-assets/",
+        "identity-and-settings/",
+        "data-quality/",
+        "SDK_FACADE_LIMITATIONS.md",
+    ):
+        assert path in readme
+    assert "30 route-backed facades" in readme
+    assert "Settings" in readme
+    assert "ContextFiles" in readme
+    assert "8e199f486b63df9f44d4c827a9f43559d9e56e07" in readme
+    assert "Offline request/model/import validation" in readme
+    assert "not live-server certification" in readme
