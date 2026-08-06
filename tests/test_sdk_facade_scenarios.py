@@ -35,6 +35,19 @@ def test_catalog_builds_valid_rc1_requests() -> None:
     assert requests["procedure"].databaseSchema.root.endswith(".demo_schema")
 
 
+@pytest.mark.parametrize("namespace", ["Demo", "1demo", "de-mo", "ab", "a" * 33])
+def test_namespace_validation_rejects_unsafe_values(namespace: str) -> None:
+    catalog = load_scenario("catalog-assets/catalog_assets.py", f"catalog_assets_{len(namespace)}")
+    environment = {
+        "OPENMETADATA_HOST": "http://localhost:8585/api",
+        "OPENMETADATA_JWT_TOKEN": "not-a-real-token",
+        "OPENMETADATA_DEMO_NAMESPACE": namespace,
+    }
+
+    with pytest.raises(ValueError, match="must match"):
+        catalog.validate_environment(environment)
+
+
 def test_owned_upsert_refuses_foreign_entity() -> None:
     catalog = load_scenario("catalog-assets/catalog_assets.py", "catalog_assets_collision")
 
@@ -54,6 +67,46 @@ def test_owned_upsert_refuses_foreign_entity() -> None:
             SimpleNamespace(),
             catalog.ownership_marker("demo"),
         )
+
+
+def test_owned_upsert_allows_an_owned_rerun() -> None:
+    catalog = load_scenario("catalog-assets/catalog_assets.py", "catalog_assets_rerun")
+    marker = catalog.ownership_marker("demo")
+    request = SimpleNamespace()
+    created: list[object] = []
+
+    class Facade:
+        @classmethod
+        def retrieve_by_name(cls, *_args, **_kwargs):
+            return SimpleNamespace(description=f"{marker} Existing demo entity.")
+
+        @classmethod
+        def create(cls, candidate):
+            created.append(candidate)
+            return SimpleNamespace(description=marker)
+
+    result = catalog.owned_upsert(Facade, "demo_database_service", request, marker)
+
+    assert created == [request]
+    assert result.description == marker
+
+
+def test_partial_failure_returns_nonzero_without_printing_credentials(monkeypatch, capsys) -> None:
+    catalog = load_scenario("catalog-assets/catalog_assets.py", "catalog_assets_failure")
+    secret = "private-demo-token"
+    monkeypatch.setenv("OPENMETADATA_HOST", "http://localhost:8585/api")
+    monkeypatch.setenv("OPENMETADATA_JWT_TOKEN", secret)
+    monkeypatch.setenv("OPENMETADATA_DEMO_NAMESPACE", "demo")
+    monkeypatch.setattr(catalog, "configure", lambda: None)
+    monkeypatch.setattr(catalog, "reset", lambda: None)
+    monkeypatch.setattr(
+        catalog,
+        "run_scenario",
+        lambda _namespace: (_ for _ in ()).throw(RuntimeError("second request failed")),
+    )
+
+    assert catalog.main() == 1
+    assert secret not in capsys.readouterr().out
 
 
 def test_catalog_creates_parents_before_assets(monkeypatch) -> None:

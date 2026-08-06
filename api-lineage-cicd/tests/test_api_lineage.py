@@ -13,7 +13,6 @@ from api_lineage_cicd import (
     build_api_endpoint_request,
     build_api_schema,
     build_column_lineage,
-    configure_from_environment,
     create_lineage,
     load_yaml,
     ownership_marker,
@@ -23,34 +22,13 @@ from api_lineage_cicd import (
 from metadata.generated.schema.type.entityLineage import Edge
 
 
-def test_client_configuration_uses_standard_environment_variables(
-    monkeypatch,
-) -> None:
-    """The demo must not contain or require credential literals."""
-    configured = {}
-    monkeypatch.setenv("OPENMETADATA_HOST", "https://metadata.example.com/api")
-    monkeypatch.setenv("OPENMETADATA_JWT_TOKEN", "test-token")
-    monkeypatch.setattr(
-        "api_lineage_cicd.configure",
-        lambda **values: configured.update(values),
-    )
-
-    configure_from_environment()
-
-    assert configured == {
-        "host": "https://metadata.example.com/api",
-        "jwt_token": "test-token",
-    }
-
-
-def test_client_configuration_respects_an_explicit_empty_mapping(monkeypatch) -> None:
+def test_environment_validation_respects_an_explicit_empty_mapping(monkeypatch) -> None:
     """Tests should not fall back to process credentials when a mapping is supplied."""
     monkeypatch.setenv("OPENMETADATA_HOST", "https://metadata.example.com/api")
     monkeypatch.setenv("OPENMETADATA_JWT_TOKEN", "test-token")
-    monkeypatch.setattr("api_lineage_cicd.configure", lambda **_: None)
 
     with pytest.raises(RuntimeError, match="OPENMETADATA_HOST"):
-        configure_from_environment({})
+        validate_environment({})
 
 
 def test_environment_requires_namespace_and_existing_services() -> None:

@@ -86,19 +86,6 @@ def load_yaml(filename: str) -> dict:
         return yaml.safe_load(f)
 
 
-def configure_from_environment(
-    environ: Mapping[str, str] | None = None,
-) -> None:
-    """Configure the SDK from the standard OpenMetadata environment variables."""
-    values = os.environ if environ is None else environ
-    try:
-        host = values["OPENMETADATA_HOST"]
-        token = values["OPENMETADATA_JWT_TOKEN"]
-    except KeyError as exc:
-        raise RuntimeError(f"Missing required environment variable: {exc.args[0]}") from exc
-    configure(host=host, jwt_token=token)
-
-
 def validate_environment(
     environ: Mapping[str, str] | None = None,
 ) -> tuple[str, dict[str, str]]:
@@ -404,7 +391,7 @@ def run_scenario(namespace: str, service_fqns: Mapping[str, str]) -> None:
 def main() -> int:
     try:
         namespace, service_fqns = validate_environment()
-        configure_from_environment()
+        configure()
         try:
             run_scenario(namespace, service_fqns)
         finally:

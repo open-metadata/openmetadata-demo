@@ -135,3 +135,21 @@ for index, path in enumerate(sys.argv[1:]):
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_facade_scripts_configure_the_sdk_only_in_main() -> None:
+    """Keep global SDK configuration out of imports and reusable helpers."""
+    for path in FACADE_SCRIPTS:
+        tree = ast.parse(path.read_text(), filename=str(path))
+        callers = {
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and any(
+                isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Name)
+                and call.func.id == "configure"
+                for call in ast.walk(node)
+            )
+        }
+        assert callers == {"main"}, path
