@@ -13,4 +13,4 @@ credit_card_amount,Credit Card New Amount,Amount paid using credit card,DECIMAL,
 coupon_amount,Coupon Amount,Discount amount applied through coupon codes,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
 bank_transfer_amount,Bank Transfer Amount,Amount paid via bank transfer new,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
 gift_card_amount,Gift Card Amount,Amount paid using gift card new balance,DECIMAL,DOUBLE,,,Finance.Payment,Payment.Financial
-country_name,Country Super Name,this is a cool new description,,,,,,
+country_name,Country Super Name,this is a cool new description,VARCHAR,STRING,,,,
