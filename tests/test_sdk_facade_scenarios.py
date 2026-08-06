@@ -160,3 +160,61 @@ def test_analytics_orders_assets_and_pipeline_status(monkeypatch) -> None:
         "Queries",
         "SearchIndexes",
     ]
+
+
+def test_storage_builds_valid_rc1_requests() -> None:
+    storage = load_scenario("storage-assets/storage_assets.py", "storage_assets")
+
+    requests = storage.build_requests("demo")
+
+    assert requests["service"].serviceType.value == "CustomStorage"
+    assert requests["root"].service.root == "demo_storage_service"
+    assert requests["child"].name.root == "demo_daily_exports"
+    assert requests["child"].parent is None
+
+
+def test_storage_sets_parent_after_both_containers_exist(monkeypatch) -> None:
+    storage = load_scenario("storage-assets/storage_assets.py", "storage_assets_order")
+    calls: list[str] = []
+
+    def fake_upsert(facade, fqn, _request, _marker):
+        calls.append(f"{facade.__name__}:{fqn}")
+        return SimpleNamespace(
+            id="11111111-1111-1111-1111-111111111111",
+            name=fqn.rsplit(".", 1)[-1],
+            entityType="container",
+            fullyQualifiedName=fqn,
+        )
+
+    monkeypatch.setattr(storage, "owned_upsert", fake_upsert)
+    monkeypatch.setattr(
+        storage.Containers,
+        "retrieve_by_name",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        storage.Containers,
+        "set_parent",
+        lambda *_: calls.append("set_parent"),
+    )
+    monkeypatch.setattr(
+        storage.Containers,
+        "list_children",
+        lambda *_args, **_kwargs: calls.append("list_children") or [],
+    )
+    monkeypatch.setattr(
+        storage.Containers,
+        "list_ancestors",
+        lambda *_: calls.append("list_ancestors") or [],
+    )
+
+    storage.run_scenario("demo")
+
+    assert calls == [
+        "StorageServices:demo_storage_service",
+        "Containers:demo_storage_service.demo_exports",
+        "Containers:demo_storage_service.demo_daily_exports",
+        "set_parent",
+        "list_children",
+        "list_ancestors",
+    ]
