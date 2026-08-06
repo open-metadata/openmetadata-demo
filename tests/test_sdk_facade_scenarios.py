@@ -350,3 +350,59 @@ def test_governance_orders_entities_before_relationships(monkeypatch) -> None:
         "DataContracts",
         "export_odcs",
     ]
+
+
+def test_identity_builds_valid_rc1_requests() -> None:
+    identity = load_scenario(
+        "identity-and-settings/identity_and_settings.py", "identity_and_settings"
+    )
+
+    requests = identity.build_requests("demo", "demo.user@example.com")
+
+    assert requests["team"].teamType.value == "Group"
+    assert requests["user"].email.root == "demo.user@example.com"
+    assert requests["user"].isAdmin is False
+    assert requests["user"].password is None
+
+
+def test_identity_reads_settings_without_mutating_them(monkeypatch) -> None:
+    identity = load_scenario(
+        "identity-and-settings/identity_and_settings.py",
+        "identity_and_settings_order",
+    )
+    calls: list[str] = []
+
+    def fake_upsert(facade, fqn, _request, _marker):
+        calls.append(facade.__name__)
+        return SimpleNamespace(
+            id="11111111-1111-1111-1111-111111111111",
+            name=fqn,
+            entityType=facade.__name__.lower(),
+            fullyQualifiedName=fqn,
+        )
+
+    monkeypatch.setattr(identity, "owned_upsert", fake_upsert)
+    monkeypatch.setattr(
+        identity.Settings,
+        "glossary_relation_settings",
+        lambda: calls.append("glossary_relation_settings") or {},
+    )
+    monkeypatch.setattr(
+        identity.Settings,
+        "glossary_relation_types",
+        lambda: calls.append("glossary_relation_types") or [],
+    )
+    monkeypatch.setattr(
+        identity.Settings,
+        "define_glossary_relation_type",
+        lambda *_: (_ for _ in ()).throw(AssertionError("settings must be read-only")),
+    )
+
+    identity.run_scenario("demo", "demo.user@example.com")
+
+    assert calls == [
+        "Teams",
+        "Users",
+        "glossary_relation_settings",
+        "glossary_relation_types",
+    ]
