@@ -491,3 +491,47 @@ def test_data_quality_rejects_missing_parents(monkeypatch) -> None:
             "tableRowCountToEqual",
             "demo",
         )
+
+
+def test_context_center_request_models_validate() -> None:
+    from metadata.generated.schema.api.data.createContextFile import CreateContextFile
+    from metadata.generated.schema.api.data.createFolder import CreateFolder
+    from metadata.generated.schema.api.data.createPage import CreatePage
+    from metadata.generated.schema.entity.data.article import Article
+    from metadata.generated.schema.entity.data.contextFile import FileType
+    from metadata.generated.schema.entity.data.page import PageType
+
+    context_file = CreateContextFile(name="demo_file", fileType=FileType.Document)
+    folder = CreateFolder(name="demo_folder")
+    page = CreatePage(name="demo_page", pageType=PageType.Article, page=Article())
+
+    assert context_file.name.root == "demo_file"
+    assert folder.name.root == "demo_folder"
+    assert page.pageType is PageType.Article
+
+
+def test_exact_rc1_context_facades_have_no_route_resolution() -> None:
+    from metadata.ingestion.ometa.ometa_api import (
+        MissingEntityTypeException,
+        OpenMetadata,
+    )
+    from metadata.sdk import ContextFiles, Folders, Pages
+
+    broken = {ContextFiles, Folders, Pages}
+    assert {facade.entity_type().__name__ for facade in broken} == {
+        "ContextFile",
+        "Folder",
+        "Page",
+    }
+    for facade in broken:
+        with pytest.raises(MissingEntityTypeException):
+            OpenMetadata.get_suffix(facade.entity_type())
+
+
+def test_context_facade_limitation_is_documented_without_workaround() -> None:
+    text = (ROOT / "SDK_FACADE_LIMITATIONS.md").read_text()
+
+    assert "2.0.0.0rc1" in text
+    assert all(name in text for name in ("ContextFiles", "Folders", "Pages"))
+    assert "No REST fallback" in text
+    assert "monkeypatch" not in text.lower()
