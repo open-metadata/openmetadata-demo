@@ -13,6 +13,29 @@ OpenMetadata 2.0 RC1 does not expose public service facades for the ML model,
 pipeline, or search services. Create those services first and supply their
 fully qualified names. Supply an existing database service for the query.
 
+## Pipeline Service Versus Pipeline Asset
+
+A Custom Pipeline **service** is the parent connection; it is not itself a
+Pipeline asset. For example:
+
+```text
+Service FQN:  custom-pipeline-m1
+Pipeline FQN: custom-pipeline-m1.my_daily_etl
+```
+
+Creating only `custom-pipeline-m1` does not add that service—or a Pipeline
+beneath it—to `Pipelines.list()` or `Pipelines.list_all()`. A connector or
+`Pipelines.create()` call must create `my_daily_etl` beneath that service. This
+scenario demonstrates that second step using the service named by
+`OPENMETADATA_PIPELINE_SERVICE_FQN`.
+
+`Pipelines.list()` returns one page, whose assets are in `.entities`;
+`Pipelines.list_all()` follows pagination and returns every Pipeline asset.
+Neither method lists Pipeline services. See the pinned RC1
+[`Pipelines` facade](https://github.com/open-metadata/OpenMetadata/blob/8e199f486b63df9f44d4c827a9f43559d9e56e07/ingestion/src/metadata/sdk/entities/pipelines.py)
+and
+[`list()`/`list_all()` implementation](https://github.com/open-metadata/OpenMetadata/blob/8e199f486b63df9f44d4c827a9f43559d9e56e07/ingestion/src/metadata/sdk/entities/base.py#L275-L333).
+
 ## Run
 
 ```bash
