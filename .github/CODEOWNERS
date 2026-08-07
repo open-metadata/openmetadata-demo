@@ -1,0 +1,8 @@
+/README.md @open-metadata/ingestion @open-metadata/documentation-team
+/.github/ @open-metadata/ingestion @open-metadata/documentation-team
+/custom-connector/ @open-metadata/ingestion @open-metadata/documentation-team
+/custom-graphql/ @open-metadata/ingestion @open-metadata/documentation-team
+/dynamic_csv_importer/ @open-metadata/ingestion @open-metadata/documentation-team
+/api-lineage-cicd/ @open-metadata/ingestion @open-metadata/documentation-team
+/ingestion-automation/ @open-metadata/ingestion @open-metadata/documentation-team
+/mcp/ @open-metadata/documentation-team

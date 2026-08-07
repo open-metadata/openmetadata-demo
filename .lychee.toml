@@ -1,0 +1,11 @@
+accept = [200, 204, 206, 429]
+exclude_all_private = true
+max_retries = 3
+retry_wait_time = 2
+timeout = 20
+exclude = [
+  "^https?://localhost(?::[0-9]+)?(?:/.*)?$",
+  "^https?://127\\.0\\.0\\.1(?::[0-9]+)?(?:/.*)?$",
+  "^https://metadata\\.example\\.com/",
+  "^https://graphql\\.example\\.com/",
+]

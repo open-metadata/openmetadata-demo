@@ -1,4 +1,0 @@
-FROM toleg/postgres_mysql_fdw
-WORKDIR /docker-entrypoint-initdb.d
-COPY docker/postgres-script.sql .
-RUN chmod -R 775 /docker-entrypoint-initdb.d

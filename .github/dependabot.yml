@@ -1,0 +1,97 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      sdk-facade-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /custom-connector
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      custom-connector-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /custom-graphql
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      custom-graphql-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /dynamic_csv_importer
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      dynamic-csv-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /api-lineage-cicd
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      api-lineage-python:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /ingestion-automation
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      ingestion-automation-python:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /custom-graphql/server
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      graphql-server:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /custom-connector/docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -1,1 +1,0 @@
-openmetadata-ingestion[postgres]==1.5.10

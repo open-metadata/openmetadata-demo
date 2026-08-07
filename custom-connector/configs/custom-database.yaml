@@ -1,0 +1,22 @@
+source:
+  type: custom-database
+  serviceName: custom_database_demo
+  serviceConnection:
+    config:
+      type: CustomDatabase
+      sourcePythonClass: openmetadata_demo_connectors.database.CustomDatabaseSource
+      connectionOptions:
+        databaseName: customer_catalog
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

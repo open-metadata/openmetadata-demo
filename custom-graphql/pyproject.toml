@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=78.1.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmetadata-graphql-user-updater"
+version = "0.1.0"
+description = "GraphQL-backed user updater example for OpenMetadata"
+requires-python = ">=3.10"
+dependencies = [
+  "openmetadata-ingestion==2.0.0.0rc1",
+  "requests>=2.32.4",
+]
+
+[tool.setuptools.packages.find]
+include = ["connector*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]

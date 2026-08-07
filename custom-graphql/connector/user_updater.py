@@ -1,9 +1,13 @@
+"""Custom source that synchronizes existing OpenMetadata users from GraphQL."""
+
 import traceback
-from dataclasses import dataclass
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 import requests
 from metadata.generated.schema.entity.domains.domain import Domain
+from metadata.generated.schema.entity.services.connections.database.customDatabaseConnection import (  # noqa: E501
+    CustomDatabaseConnection,
+)
 from metadata.generated.schema.entity.teams.user import User
 from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
@@ -11,8 +15,8 @@ from metadata.generated.schema.metadataIngestion.workflow import (
 from metadata.generated.schema.type.entityReference import EntityReference
 from metadata.generated.schema.type.entityReferenceList import EntityReferenceList
 from metadata.ingestion.api.models import Either, StackTraceError
-from metadata.ingestion.api.steps import Source
-from metadata.generated.schema.api.teams.createUser import CreateUserRequest
+from metadata.ingestion.api.steps import InvalidSourceException, Source
+from metadata.ingestion.models.patch_request import PatchRequest
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.ingestion.ometa.utils import model_str
 from metadata.utils.logger import ingestion_logger
@@ -20,68 +24,41 @@ from metadata.utils.logger import ingestion_logger
 logger = ingestion_logger()
 
 
-@dataclass
-class UserUpdaterConfig:
-    """Configuration for User Updater connector"""
-
-    graphql_endpoint: str
-
-
 class UserUpdaterSource(Source):
-    """
-    Custom connector that fetches user data from GraphQL server
-    and updates OpenMetadata user entities with displayName and domain
-    """
-
-    def prepare(self):
-        self.domains = list(
-            self.metadata.list_all_entities(
-                entity=Domain,
-            )
-        )
-        self.users = list(
-            self.metadata.list_all_entities(
-                entity=User,
-                fields=["*"]
-            )
-        )
+    """Update existing users with display names and domains returned by GraphQL."""
 
     def __init__(self, config: WorkflowSource, metadata: OpenMetadata):
         super().__init__()
         self.config = config
         self.metadata = metadata
-
-        # Extract our custom config from connectionOptions
-        connection_options = self.config.serviceConnection.root.config.connectionOptions
-        self.graphql_endpoint = connection_options.root.get(
-            "graphql_endpoint", "http://localhost:4000"
+        options = config.serviceConnection.root.config.connectionOptions
+        self.graphql_endpoint = (options.root or {}).get(
+            "graphql_endpoint", "http://localhost:4000/"
         )
-
-        self.domains = None
-        self.users = None
+        self.domains: list[Domain] = []
+        self.users: list[User] = []
 
     @classmethod
     def create(
         cls,
         config_dict: dict,
         metadata: OpenMetadata,
-        pipeline_name: Optional[str] = None,
+        pipeline_name: str | None = None,
     ) -> "UserUpdaterSource":
-        config: WorkflowSource = WorkflowSource.parse_obj(config_dict)
+        """Validate workflow configuration and create the source."""
+        config = WorkflowSource.model_validate(config_dict)
+        connection = config.serviceConnection.root.config
+        if not isinstance(connection, CustomDatabaseConnection):
+            raise InvalidSourceException(f"Expected CustomDatabaseConnection, but got {connection}")
         return cls(config, metadata)
 
-    def _fetch_users_from_graphql(self):
-        """Fetch users from GraphQL server"""
-        query = """
-        {
-            users {
-                email
-                displayName
-                domain
-            }
-        }
-        """
+    def prepare(self) -> None:
+        """Cache the OpenMetadata users and domains used for reconciliation."""
+        self.domains = list(self.metadata.list_all_entities(entity=Domain))
+        self.users = list(self.metadata.list_all_entities(entity=User, fields=["*"]))
 
+    def _request_graphql(self, query: str) -> dict:
+        """Run one GraphQL query and surface transport or protocol failures."""
         try:
             response = requests.post(
                 self.graphql_endpoint,
@@ -90,189 +67,124 @@ class UserUpdaterSource(Source):
                 timeout=30,
             )
             response.raise_for_status()
-            data = response.json()
-            return data.get("data", {}).get("users", [])
-        except Exception as e:
-            logger.error(f"Failed to fetch users from GraphQL: {e}")
-            return []
+            payload = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            raise RuntimeError(f"GraphQL request failed: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise RuntimeError("GraphQL request failed: response was not an object")
+        if payload.get("errors"):
+            raise RuntimeError(f"GraphQL request failed: {payload['errors']}")
+        return payload
 
-    def _find_domain_by_name(self, domain_name: str) -> Optional[EntityReference]:
-        """Find domain entity by name and return as EntityReference"""
-        try:
-            # Try to find existing domain
-            for domain in self.domains:
-                if model_str(domain.name).lower() == domain_name.lower():
-                    return EntityReference(
-                        id=domain.id,
-                        type="domain",
-                        name=domain.name.root,
-                        fullyQualifiedName=domain.fullyQualifiedName.root,
-                    )
-        except Exception as e:
-            logger.debug(f"Error searching for domain {domain_name}: {e}")
+    def _fetch_users_from_graphql(self) -> list[dict]:
+        """Fetch the external user records."""
+        payload = self._request_graphql(
+            """
+            {
+              users {
+                email
+                displayName
+                domain
+              }
+            }
+            """
+        )
+        data = payload.get("data")
+        users = data.get("users") if isinstance(data, dict) else None
+        if not isinstance(users, list):
+            raise RuntimeError("GraphQL request failed: data.users was not a list")
+        return users
+
+    def _find_domain_by_name(self, domain_name: str) -> EntityReference | None:
+        """Return the matching OpenMetadata domain reference, if one exists."""
+        for domain in self.domains:
+            if model_str(domain.name).lower() == domain_name.lower():
+                return EntityReference(
+                    id=domain.id,
+                    type="domain",
+                    name=model_str(domain.name),
+                    fullyQualifiedName=model_str(domain.fullyQualifiedName),
+                )
         return None
 
-    def _domains_changed(self, current_domains, new_domains) -> bool:
-        """Check if domain lists are different"""
-        # Handle None cases
-        if current_domains is None and new_domains is None:
-            return False
-        if current_domains is None or new_domains is None:
-            return True
-        
-        # Get domain IDs for comparison
-        current_ids = set()
-        if current_domains and current_domains.root:
-            current_ids = {d.id.root for d in current_domains.root}
-        
-        new_ids = set()
-        if new_domains and new_domains.root:
-            new_ids = {d.id.root for d in new_domains.root}
-        
-        return current_ids != new_ids
+    @staticmethod
+    def _domain_ids(domains: EntityReferenceList | None) -> set[str]:
+        """Normalize an optional domain list for change detection."""
+        if not domains or not domains.root:
+            return set()
+        return {model_str(domain.id) for domain in domains.root}
 
-    def _update_user_entity(self, user_data):
-        """Check existing user and create CreateUserRequest only if displayName or domains need updates"""
-        try:
-            email = user_data["email"]
-            display_name = user_data["displayName"]
-            domain_name = user_data["domain"]
-            
-            # Find existing user
-            existing_user = None
+    def _build_user_update(self, user_data: dict) -> PatchRequest | None:
+        """Build a targeted patch plan only when the GraphQL values differ."""
+        email = user_data["email"]
+        existing_user = next(
+            (user for user in self.users if model_str(user.email) == email),
+            None,
+        )
+        if not existing_user:
+            logger.warning("User %s does not exist in OpenMetadata", email)
+            return None
+
+        domain = self._find_domain_by_name(user_data["domain"])
+        if not domain:
+            raise ValueError(f"Unknown OpenMetadata domain: {user_data['domain']}")
+        requested_domains = EntityReferenceList(root=[domain])
+        display_name = user_data["displayName"]
+        if model_str(existing_user.displayName) == display_name and self._domain_ids(
+            existing_user.domains
+        ) == self._domain_ids(requested_domains):
+            return None
+
+        destination = existing_user.model_copy(
+            deep=True,
+            update={
+                "displayName": display_name,
+                "domains": requested_domains,
+            },
+        )
+        return PatchRequest(
+            original_entity=existing_user,
+            new_entity=destination,
+            override_metadata=True,
+        )
+
+    def _apply_user_update(self, request: PatchRequest) -> User:
+        """Apply only the two fields owned by this synchronization."""
+        updated = self.metadata.patch(
+            entity=User,
+            source=request.original_entity,
+            destination=request.new_entity,
+            allowed_fields={"displayName": True, "domains": True},
+            restrict_update_fields=["displayName"],
+            override_metadata=request.override_metadata,
+            skip_on_failure=False,
+        )
+        if not updated:
+            user_name = model_str(request.original_entity.name)
+            raise RuntimeError(f"OpenMetadata returned no updated user for {user_name}")
+        return updated
+
+    def _iter(self, *_, **__) -> Iterable[Either]:
+        """Yield user updates produced from the GraphQL response."""
+        for user_data in self._fetch_users_from_graphql():
             try:
-                for user in self.users:
-                    if model_str(user.email) == email:
-                        existing_user = user
-                        break
-            except Exception as e:
-                logger.debug(f"Error searching for user {email}: {e}")
-            
-            if not existing_user:
-                return f"User {email} not found in OpenMetadata"
-            
-            # Find domain reference
-            domain_ref = self._find_domain_by_name(domain_name)
-            new_domains = EntityReferenceList(root=[domain_ref]) if domain_ref else None
-
-            # Check if updates are needed
-            needs_update = False
-
-            # Check displayName
-            current_display_name = model_str(existing_user.displayName) if existing_user.displayName else None
-            if current_display_name != display_name:
-                needs_update = True
-
-            # Check domains
-            current_domains = existing_user.domains
-            domains_changed = self._domains_changed(current_domains, new_domains)
-            if domains_changed:
-                needs_update = True
-
-            if not needs_update:
-                return f"User {email} is already up to date"
-
-            # Create CreateUserRequest with updated fields, preserving existing data
-            create_user_request = CreateUserRequest(
-                name=model_str(existing_user.name),  # Keep existing name
-                email=email,
-                displayName=display_name,
-                domains=[domain_ref.fullyQualifiedName] if domain_ref else [],
-                # Preserve existing user fields
-                description=existing_user.description,
-                profile=existing_user.profile,
-                timezone=existing_user.timezone,
-                isBot=existing_user.isBot,
-                isAdmin=existing_user.isAdmin,
-                authenticationMechanism=existing_user.authenticationMechanism,
-                teams=[team.id for team in existing_user.teams.root or []],
-                roles=[role.id for role in existing_user.roles.root or []],
-                personas=existing_user.personas,
-            )
-
-            return create_user_request
-
-        except Exception as e:
-            error_msg = f"Failed to process user {user_data.get('email', 'unknown')}: {e}"
-            logger.error(error_msg)
-            return error_msg
-
-
-    def _iter(self) -> Iterable[Either]:
-        """
-        Main method that yields results for each user update
-        """
-        logger.info("Starting User Updater connector")
-
-        # Fetch users from GraphQL
-        users = self._fetch_users_from_graphql()
-
-        if not users:
-            yield Either(
-                left=StackTraceError(
-                    name="GraphQL Fetch Error",
-                    error="No users found from GraphQL endpoint or failed to fetch",
-                    stackTrace=traceback.format_exc(),
-                )
-            )
-            return
-
-        logger.info(f"Found {len(users)} users from GraphQL")
-
-        # Process each user
-        for user_data in users:
-            try:
-                result = self._update_user_entity(user_data)
-
-                # If result is a CreateUserRequest, yield it as right
-                if isinstance(result, CreateUserRequest):
-                    yield Either(right=result)
-                else:
-                    # Handle different types of string messages
-                    result_str = str(result)
-                    if "already up to date" in result_str:
-                        # Just log up-to-date users, don't yield as error
-                        logger.info(result_str)
-                    elif "not found" in result_str:
-                        # Yield user not found as error
-                        yield Either(
-                            left=StackTraceError(
-                                name="User Not Found",
-                                error=result_str,
-                                stackTrace=traceback.format_exc(),
-                            )
-                        )
-                    else:
-                        # Yield other messages as general info
-                        yield Either(
-                            left=StackTraceError(
-                                name="User Processing Info",
-                                error=result_str,
-                                stackTrace=traceback.format_exc(),
-                            )
-                        )
-            except Exception as e:
+                request = self._build_user_update(user_data)
+                if request:
+                    self.status.updated(self._apply_user_update(request))
+            except (AttributeError, KeyError, RuntimeError, TypeError, ValueError) as exc:
                 yield Either(
                     left=StackTraceError(
-                        name="User Processing Error",
-                        error=f"Error processing user {user_data.get('email', 'unknown')}: {e}",
+                        name=user_data.get("email", "unknown user"),
+                        error=str(exc),
                         stackTrace=traceback.format_exc(),
                     )
                 )
 
     def test_connection(self) -> None:
-        """Test connection to both GraphQL endpoint and OpenMetadata"""
-        try:
-            # Test GraphQL connection
-            response = requests.get(self.graphql_endpoint, timeout=10)
-            response.raise_for_status()
+        """Check the GraphQL and OpenMetadata endpoints without changing data."""
+        self._request_graphql("{ users { email } }")
+        if not self.metadata.health_check():
+            raise ConnectionError("OpenMetadata health check failed")
 
-            # Test OpenMetadata connection
-            self.metadata.health_check()
-
-        except Exception as e:
-            raise ConnectionError(f"Connection test failed: {e}")
-
-    def close(self):
-        """Clean up resources"""
-        pass
+    def close(self) -> None:
+        """The connector does not retain external resources."""

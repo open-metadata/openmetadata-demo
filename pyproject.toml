@@ -1,0 +1,24 @@
+[tool.pytest.ini_options]
+testpaths = [
+  "custom-connector/tests",
+  "custom-graphql/tests",
+  "dynamic_csv_importer/tests",
+  "api-lineage-cicd/tests",
+  "ingestion-automation/tests",
+  "tests",
+]
+pythonpath = [
+  "custom-connector/src",
+  "custom-graphql",
+  ".",
+  "api-lineage-cicd",
+  "ingestion-automation",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]

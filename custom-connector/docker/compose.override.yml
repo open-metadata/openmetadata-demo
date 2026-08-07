@@ -1,0 +1,6 @@
+services:
+  ingestion:
+    build:
+      context: ./custom-connector
+      dockerfile: docker/Dockerfile
+    image: openmetadata-demo/ingestion:2.0.0-rc1
