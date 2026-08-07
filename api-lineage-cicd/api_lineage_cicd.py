@@ -267,6 +267,20 @@ def build_column_lineage(
     ]
 
 
+def column_lineage_signatures(
+    columns: list[ColumnLineage] | None,
+) -> set[tuple[tuple[str, ...], str, str | None]]:
+    """Normalize mappings so server filtering or reordering is visible."""
+    return {
+        (
+            tuple(sorted(model_str(source) for source in column.fromColumns or [])),
+            model_str(column.toColumn),
+            model_str(column.function) if column.function else None,
+        )
+        for column in columns or []
+    }
+
+
 def lineage_edge_fqns(
     edge: dict,
     service_fqns: Mapping[str, str] | None = None,
@@ -331,8 +345,9 @@ def verify_lineage(
     raw: dict,
     service_fqns: Mapping[str, str] | None = None,
 ) -> None:
-    """Fetch lineage back and require every declarative edge to exist."""
+    """Fetch lineage back and require every edge and column mapping to exist."""
     verified = 0
+    verified_columns = 0
     for edge in raw.get("edges", []):
         from_fqn, to_fqn = lineage_edge_fqns(edge, service_fqns)
         from_endpoint = APIEndpoints.retrieve_by_name(from_fqn)
@@ -345,14 +360,29 @@ def verify_lineage(
         )
         from_id = model_str(from_endpoint.id)
         to_id = model_str(to_endpoint.id)
-        found = lineage and any(
-            model_str(upstream.fromEntity) == from_id and model_str(upstream.toEntity) == to_id
-            for upstream in lineage.upstreamEdges or []
+        matching_edge = next(
+            (
+                upstream
+                for upstream in ((lineage.upstreamEdges or []) if lineage else [])
+                if model_str(upstream.fromEntity) == from_id
+                and model_str(upstream.toEntity) == to_id
+            ),
+            None,
         )
-        if not found:
+        if matching_edge is None:
             raise RuntimeError(f"Missing lineage edge: {from_fqn} → {to_fqn}")
+
+        expected_columns = build_column_lineage(edge.get("columnLineage"), service_fqns)
+        details = matching_edge.lineageDetails
+        actual_columns = details.columnsLineage if details else None
+        if column_lineage_signatures(actual_columns) != column_lineage_signatures(expected_columns):
+            raise RuntimeError(
+                f"Column lineage mismatch: {from_fqn} → {to_fqn}. "
+                "Use the exact field FQNs returned by OpenMetadata."
+            )
         verified += 1
-    print(f"  Verified {verified} lineage edges")
+        verified_columns += len(expected_columns or [])
+    print(f"  Verified {verified} lineage edges and {verified_columns} column mappings")
 
 
 # ------------------------------------------------------------------ #

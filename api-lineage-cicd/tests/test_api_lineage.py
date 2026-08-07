@@ -14,12 +14,13 @@ from api_lineage_cicd import (
     build_api_schema,
     build_column_lineage,
     create_lineage,
+    lineage_edge_fqns,
     load_yaml,
     ownership_marker,
     validate_environment,
     verify_lineage,
 )
-from metadata.generated.schema.type.entityLineage import Edge
+from metadata.generated.schema.type.entityLineage import Edge, LineageDetails
 
 
 def test_environment_validation_respects_an_explicit_empty_mapping(monkeypatch) -> None:
@@ -238,8 +239,21 @@ def test_lineage_verification_uses_mocked_sdk_boundaries(monkeypatch, capsys) ->
         calls.append(kwargs)
         to_id = str(kwargs["entity_id"])
         from_id = source_by_target[to_id]
+        expected_edge = next(
+            edge
+            for edge in load_yaml("lineage.yaml")["edges"]
+            if ids[lineage_edge_fqns(edge)[1]] == to_id
+        )
         return SimpleNamespace(
-            upstreamEdges=[Edge(fromEntity=from_id, toEntity=to_id)],
+            upstreamEdges=[
+                Edge(
+                    fromEntity=from_id,
+                    toEntity=to_id,
+                    lineageDetails=LineageDetails(
+                        columnsLineage=build_column_lineage(expected_edge["columnLineage"])
+                    ),
+                )
+            ],
             downstreamEdges=[],
         )
 
@@ -250,7 +264,44 @@ def test_lineage_verification_uses_mocked_sdk_boundaries(monkeypatch, capsys) ->
     assert len(calls) == 2
     assert all(call["upstream_depth"] == 1 for call in calls)
     assert all(call["downstream_depth"] == 1 for call in calls)
-    assert "Verified 2 lineage edges" in capsys.readouterr().out
+    assert "Verified 2 lineage edges and 5 column mappings" in capsys.readouterr().out
+
+
+def test_lineage_verification_fails_when_server_filters_column_fqns(monkeypatch) -> None:
+    """An entity edge must not hide rejected field-level mappings."""
+    ids = {
+        "orders-api.orders.createOrder": "11111111-1111-1111-1111-111111111111",
+        "fulfillment-api.shipments.createShipment": "22222222-2222-2222-2222-222222222222",
+        "orders-api.orders.getOrder": "33333333-3333-3333-3333-333333333333",
+        "fulfillment-api.shipments.getShipment": "44444444-4444-4444-4444-444444444444",
+    }
+    monkeypatch.setattr(
+        APIEndpoints,
+        "retrieve_by_name",
+        lambda fqn: SimpleNamespace(id=ids[fqn]),
+    )
+    monkeypatch.setattr(
+        Lineage,
+        "get_entity_lineage",
+        lambda **kwargs: SimpleNamespace(
+            upstreamEdges=[
+                Edge(
+                    fromEntity=(
+                        ids["orders-api.orders.createOrder"]
+                        if str(kwargs["entity_id"])
+                        == ids["fulfillment-api.shipments.createShipment"]
+                        else ids["orders-api.orders.getOrder"]
+                    ),
+                    toEntity=str(kwargs["entity_id"]),
+                    lineageDetails=LineageDetails(columnsLineage=[]),
+                )
+            ],
+            downstreamEdges=[],
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="Column lineage mismatch"):
+        verify_lineage(load_yaml("lineage.yaml"))
 
 
 def test_lineage_verification_fails_when_a_requested_edge_is_missing(monkeypatch) -> None:
