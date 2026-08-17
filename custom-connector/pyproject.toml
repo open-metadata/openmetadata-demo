@@ -7,7 +7,7 @@ name = "openmetadata-demo-connectors"
 version = "0.1.0"
 description = "Runnable custom connector examples for OpenMetadata"
 requires-python = ">=3.10"
-dependencies = ["openmetadata-ingestion==2.0.0.0rc1"]
+dependencies = ["openmetadata-ingestion==2.0.0.0rc2"]
 
 [project.optional-dependencies]
 test = ["pytest>=8", "ruff>=0.12"]
