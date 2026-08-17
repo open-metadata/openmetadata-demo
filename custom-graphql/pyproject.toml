@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "GraphQL-backed user updater example for OpenMetadata"
 requires-python = ">=3.10"
 dependencies = [
-  "openmetadata-ingestion==2.0.0.0rc1",
+  "openmetadata-ingestion==2.0.0.0rc2",
   "requests>=2.32.4",
 ]
 
