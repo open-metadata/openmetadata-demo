@@ -1,4 +1,4 @@
-FROM docker.getcollate.io/openmetadata/ingestion:2.0.0-rc1
+FROM docker.getcollate.io/openmetadata/ingestion:2.1.0-rc1
 
 WORKDIR /opt/airflow/openmetadata-demo-connectors
 USER airflow
