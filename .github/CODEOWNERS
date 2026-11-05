@@ -5,4 +5,5 @@
 /dynamic_csv_importer/ @open-metadata/ingestion @open-metadata/documentation-team
 /api-lineage-cicd/ @open-metadata/ingestion @open-metadata/documentation-team
 /ingestion-automation/ @open-metadata/ingestion @open-metadata/documentation-team
+/test-suite-automation/ @open-metadata/ingestion @open-metadata/documentation-team
 /mcp/ @open-metadata/documentation-team

@@ -81,6 +81,37 @@ jobs:
       - name: Run offline RC1 model, facade, import, and request tests
         run: pytest
 
+  test-suite:
+    name: Test Suite SDK 2.0.7.2 / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: test-suite-automation
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: test-suite-automation/requirements.txt
+
+      - name: Install the isolated SDK and test dependencies
+        run: python -m pip install --requirement requirements.txt pytest ruff
+
+      - name: Validate Test Suite models, updates, and orchestration requests
+        run: |
+          python -m compileall -q .
+          ruff check .
+          ruff format --check .
+          python -m pytest
+
   node:
     name: Node fixture
     runs-on: ubuntu-latest

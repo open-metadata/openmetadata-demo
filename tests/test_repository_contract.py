@@ -14,6 +14,8 @@ from metadata.generated.schema.metadataIngestion.workflow import (
 
 ROOT = Path(__file__).parents[1]
 INGESTION_VERSION = "2.0.0.0rc1"
+TEST_SUITE_VERSION = "2.0.7.2"
+TEST_SUITE_ROOT = ROOT / "test-suite-automation"
 DOCKER_VERSION = "2.0.0-rc1"
 RELEASE_VERSION = "2.0.0-rc1-release"
 MAINTAINED_ROOTS = (
@@ -29,6 +31,7 @@ MAINTAINED_ROOTS = (
     ROOT / "governance-assets",
     ROOT / "identity-and-settings",
     ROOT / "data-quality",
+    TEST_SUITE_ROOT,
 )
 CONTRACT_FILES = (
     ROOT / "README.md",
@@ -36,12 +39,13 @@ CONTRACT_FILES = (
     ROOT / "SDK_FACADE_LIMITATIONS.md",
     ROOT / "pyproject.toml",
     ROOT / ".lychee.toml",
+    TEST_SUITE_ROOT / "requirements.txt",
 )
 
 
 def maintained_text_files() -> list[Path]:
     """Return customer-facing text files while ignoring generated local state."""
-    ignored_parts = {".pytest_cache", "__pycache__", "node_modules"}
+    ignored_parts = {".pytest_cache", ".venv", "__pycache__", "node_modules"}
     allowed_suffixes = {
         ".cfg",
         ".ini",
@@ -74,10 +78,7 @@ def repository_contract_files() -> list[Path]:
 
 
 def pin_contract_violations(paths: list[Path]) -> list[str]:
-    """Return dependency, image, and release references that are not exact RC pins."""
-    exact_package = re.compile(
-        rf"openmetadata-ingestion(?:\[[^]]+\])?\s*==\s*{re.escape(INGESTION_VERSION)}\b"
-    )
+    """Require exact pins, with SDK 2.0.7.2 isolated to Test Suite automation."""
     image_candidate = re.compile(
         r"(?:(?:[A-Za-z0-9_.-]+(?::[0-9]+)?/)*openmetadata/(?:ingestion|server|postgresql)"
         r"|openmetadata-demo/ingestion)"
@@ -93,6 +94,12 @@ def pin_contract_violations(paths: list[Path]) -> list[str]:
     violations = []
 
     for path in paths:
+        expected_version = (
+            TEST_SUITE_VERSION if path.is_relative_to(TEST_SUITE_ROOT) else INGESTION_VERSION
+        )
+        exact_package = re.compile(
+            rf"openmetadata-ingestion(?:\[[^]]+\])?\s*==\s*{re.escape(expected_version)}\b"
+        )
         for line_number, line in enumerate(path.read_text().splitlines(), start=1):
             installed_version_check = re.search(
                 r"version\(\s*['\"]openmetadata-ingestion['\"]\s*\)", line
@@ -148,19 +155,28 @@ def test_openmetadata_dependencies_are_pinned_to_the_exact_rc() -> None:
     )
     release_pattern = re.compile(r"OpenMetadata/releases/download/([A-Za-z0-9_.-]+)/docker-compose")
 
-    package_constraints: set[tuple[str, str]] = set()
+    package_constraints: dict[str, set[tuple[str, str]]] = {
+        INGESTION_VERSION: set(),
+        TEST_SUITE_VERSION: set(),
+    }
     image_versions: set[str] = set()
     release_versions: set[str] = set()
     rc_literal_pattern = re.compile(r"\b2\.0\.0(?:\.0)?(?:rc\d+|-rc\d+)(?:-release)?\b")
     rc_literals: set[str] = set()
     for path in contract_files:
         contents = path.read_text()
-        package_constraints.update(package_pattern.findall(contents))
+        expected_version = (
+            TEST_SUITE_VERSION if path.is_relative_to(TEST_SUITE_ROOT) else INGESTION_VERSION
+        )
+        package_constraints[expected_version].update(package_pattern.findall(contents))
         image_versions.update(image_pattern.findall(contents))
         release_versions.update(release_pattern.findall(contents))
         rc_literals.update(rc_literal_pattern.findall(contents))
 
-    assert package_constraints == {("==", INGESTION_VERSION)}
+    assert package_constraints == {
+        INGESTION_VERSION: {("==", INGESTION_VERSION)},
+        TEST_SUITE_VERSION: {("==", TEST_SUITE_VERSION)},
+    }
     assert image_versions == {DOCKER_VERSION}
     assert release_versions == {RELEASE_VERSION}
     assert rc_literals == {INGESTION_VERSION, DOCKER_VERSION, RELEASE_VERSION}
@@ -191,9 +207,7 @@ def test_pin_contract_rejects_unpinned_references(tmp_path: Path, reference: str
 
 def test_maintained_examples_do_not_contain_credential_shaped_literals() -> None:
     """Credentials in maintained examples must be supplied through the environment."""
-    yaml_files = [
-        path for root in MAINTAINED_ROOTS for path in (*root.rglob("*.yaml"), *root.rglob("*.yml"))
-    ]
+    yaml_files = [path for path in maintained_text_files() if path.suffix in {".yaml", ".yml"}]
     jwt_literal = re.compile(r"jwtToken:\s*(?!\$\{OPENMETADATA_JWT_TOKEN\})\S+")
     token_shapes = (
         re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}"),
@@ -205,6 +219,35 @@ def test_maintained_examples_do_not_contain_credential_shaped_literals() -> None
         assert not any(pattern.search(contents) for pattern in token_shapes), path
     for path in yaml_files:
         assert not jwt_literal.search(path.read_text()), path
+
+
+def test_maintained_files_exclude_the_documented_local_environment(tmp_path, monkeypatch) -> None:
+    """Installing the standalone example must not scan third-party package sources."""
+    monkeypatch.setitem(maintained_text_files.__globals__, "MAINTAINED_ROOTS", (tmp_path,))
+    environment = tmp_path / ".venv"
+    environment.mkdir()
+    (environment / "dependency.py").write_text("not maintained", encoding="utf-8")
+    (environment / "config.yaml").write_text("jwtToken: third-party", encoding="utf-8")
+    guide = tmp_path / "README.md"
+    guide.write_text("maintained", encoding="utf-8")
+
+    assert maintained_text_files() == [guide]
+
+
+def test_sdk_version_exception_is_limited_to_test_suite_automation(tmp_path, monkeypatch) -> None:
+    """The new scenario cannot loosen the RC1 pins elsewhere in the catalog."""
+    scenario = tmp_path / "test-suite-automation"
+    scenario.mkdir()
+    monkeypatch.setitem(pin_contract_violations.__globals__, "TEST_SUITE_ROOT", scenario)
+    supported = scenario / "requirements.txt"
+    outside = tmp_path / "requirements.txt"
+    for candidate in (supported, outside):
+        candidate.write_text(f"openmetadata-ingestion=={TEST_SUITE_VERSION}", encoding="utf-8")
+
+    assert pin_contract_violations([supported]) == []
+    assert pin_contract_violations([outside])
+    supported.write_text(f"openmetadata-ingestion=={INGESTION_VERSION}", encoding="utf-8")
+    assert pin_contract_violations([supported])
 
 
 def test_mcp_seed_credentials_match_the_workshop() -> None:

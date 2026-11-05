@@ -1,10 +1,14 @@
 # OpenMetadata 2.0 RC1 Demo Catalog
 
 > [!IMPORTANT]
-> These maintained examples target exactly
+> Unless a guide states otherwise, these maintained examples target exactly
 > `openmetadata-ingestion==2.0.0.0rc1` and Docker images tagged
 > `2.0.0-rc1`. They are prerelease examples and are not compatible with
 > OpenMetadata 1.x.
+
+For scheduling an existing executable Test Suite on **SDK 2.0.7.2**, use the separately pinned
+[`test-suite-automation/`](test-suite-automation/) example. It covers creation, cron scheduling,
+deployment to the server's orchestrator, schedule updates, and optional manual triggering.
 
 This repository contains small, runnable examples for extending and automating
 OpenMetadata. The facade scenarios are based on the `2.0.0-rc1-release` source
@@ -59,6 +63,7 @@ must match `^[a-z][a-z0-9_]{2,31}$`.
 | Dynamic CSV importer | Update explicitly named tables and dashboard data models through public facades | 2.0 RC1 | Full CSV parse, deep-copy plan, preflight targets, and mocked facade updates | [`dynamic_csv_importer/`](dynamic_csv_importer/) | Ingestion and Documentation |
 | API lineage CI/CD | Create collections/endpoints under existing API services and verify lineage | 2.0 RC1 | YAML, request-model, ownership, field-reference, and mocked lineage tests | [`api-lineage-cicd/`](api-lineage-cicd/) | Ingestion and Documentation |
 | Ingestion automation | Create, deploy, and trigger a database ingestion pipeline | 2.0 RC1 | Request-model and mocked REST-path tests | [`ingestion-automation/`](ingestion-automation/) | Ingestion and Documentation |
+| Test Suite automation | Schedule, deploy, update, and optionally trigger an existing executable Test Suite | SDK 2.0.7.2 | Generated models, real JSON Patch generation, and mocked orchestration tests | [`test-suite-automation/`](test-suite-automation/) | Ingestion and Documentation |
 | MCP workshop | OpenMetadata MCP, Goose, and Jupyter workshop | 2.0 RC1 | Link and seed-file checks only | [`mcp/`](mcp/) | Documentation |
 
 ## Write Safety
@@ -73,7 +78,7 @@ ownership marker to entity descriptions:
 They create missing entities and rerun entities with the same marker. They
 abort rather than overwrite a foreign collision. The CSV importer is different:
 its repeatable FQN flags are the explicit authorization boundary for existing
-assets. None of these examples includes hard delete, recursive delete,
+assets. None of these facade examples includes hard delete, recursive delete,
 automatic cleanup, restore, global Settings mutation, search reindex, or test
 execution.
 
