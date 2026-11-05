@@ -95,15 +95,51 @@ def test_missing_suite_is_rejected() -> None:
     metadata.create_or_update.assert_not_called()
 
 
-def test_create_uses_stable_fqn_and_preserves_quoted_names(suite: Suite) -> None:
+def test_create_uses_a_stable_suite_specific_name(suite: Suite) -> None:
     metadata = Mock(spec=OpenMetadata)
     metadata.get_by_name.side_effect = [suite, None]
+    example.configure_pipeline(metadata, SUITE_FQN, None, AirflowConfig())
+
+    assert metadata.get_by_name.call_args.kwargs["fqn"] == f"{SUITE_FQN}.dq_{SUITE_ID}"
+    request = metadata.create_or_update.call_args.kwargs["data"]
+    assert request.name.root == f"dq_{SUITE_ID}"
+    metadata.patch.assert_not_called()
+
+
+def test_default_names_remain_distinct_after_orchestrator_normalization(suite: Suite) -> None:
+    other = Suite.model_validate(
+        suite.model_dump(mode="json") | {"id": "55555555-5555-5555-5555-555555555555"}
+    )
+    requests = [
+        example.build_pipeline_request(item, None, AirflowConfig())
+        for item in (suite, other, suite)
+    ]
+    names = [request.name.root for request in requests]
+
+    assert names[0] == names[2]
+    assert names[0] != names[1]
+    assert all(len(name) <= 52 for name in names)
+    assert names[0].replace("_", "-") != names[1].replace("_", "-")
+
+
+def test_named_existing_pipeline_preserves_quoted_lookup(suite: Suite, pipeline) -> None:
+    metadata = Mock(spec=OpenMetadata)
+    metadata.get_by_name.side_effect = [suite, pipeline]
+    metadata.patch.return_value = None
+
     example.configure_pipeline(metadata, SUITE_FQN, "daily.dq", AirflowConfig())
 
     assert metadata.get_by_name.call_args.kwargs["fqn"] == f'{SUITE_FQN}."daily.dq"'
-    request = metadata.create_or_update.call_args.kwargs["data"]
-    assert request.name.root == "daily.dq"
-    metadata.patch.assert_not_called()
+    metadata.create_or_update.assert_not_called()
+
+
+def test_unknown_custom_name_cannot_create_a_colliding_workflow(suite: Suite) -> None:
+    metadata = Mock(spec=OpenMetadata)
+    metadata.get_by_name.side_effect = [suite, None]
+
+    with pytest.raises(ValueError, match="omit --pipeline-name"):
+        example.configure_pipeline(metadata, SUITE_FQN, "shared_name", AirflowConfig())
+    metadata.create_or_update.assert_not_called()
 
 
 def test_schedule_patch_preserves_all_other_settings(
@@ -219,6 +255,7 @@ def test_cli_deploys_before_optional_trigger(
 
     assert example.main() == (0 if deploy_code == 200 else 1)
     config = configure.call_args.kwargs["airflow_config"]
+    assert configure.call_args.kwargs["pipeline_name"] is None
     assert config.scheduleInterval == "0 6 * * *"
     assert config.pipelineTimezone == "UTC"
     assert [call.args[0] for call in metadata.client.post.call_args_list] == [

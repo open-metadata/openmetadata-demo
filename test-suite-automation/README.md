@@ -3,8 +3,8 @@
 This example targets **SDK 2.0.7.2** and a compatible OpenMetadata or Collate server.
 It creates a Data Quality ingestion pipeline for an **existing executable/table Test Suite**,
 schedules it for `0 6 * * *`, deploys it to the server's configured orchestrator, and optionally
-requests an immediate run. Rerunning with the same suite FQN and pipeline name updates that
-pipeline's schedule instead of creating another pipeline.
+requests an immediate run. Rerunning with the same suite FQN updates that pipeline's schedule
+instead of creating another pipeline.
 
 ## Prerequisites
 
@@ -40,7 +40,6 @@ checks run on Python 3.10, 3.11, and 3.12.
 ```bash
 python test-suite-automation/test_suite_pipeline.py \
   --test-suite-fqn 'warehouse.analytics.public.orders.testSuite' \
-  --pipeline-name daily_data_quality \
   --schedule '0 6 * * *'
 ```
 
@@ -54,15 +53,31 @@ using `type="testSuite"`. Its `sourceConfig.config.entityFullyQualifiedName` is 
 from `basicEntityReference`, rather than the suite FQN. New pipelines omit the `testCases` filter
 to execute all Test Cases in the suite.
 
+New pipelines use the stable name `dq_<suite UUID>`. Orchestrators can identify workflows by
+the bare pipeline name, even though metadata FQNs are suite-scoped. A shared name could overwrite
+another suite's deployed workflow. The generated name retains the full UUID within Argo's
+52-character name limit and remains unique after punctuation normalization.
+
 The generated scheduling model is named `AirflowConfig` for historical reasons. It is also the
 API scheduling configuration when Collate dispatches to its managed orchestrator. Deploy and
 trigger requests go through the tenant API, not directly to Airflow or Kubernetes.
 
 ## Update a pipeline or schedule
 
-Run the same command with the **same suite FQN and pipeline name**, changing `--schedule`.
-For an existing pipeline, use its actual `name` from the API, which can differ from the UI display
-name. Changing the name creates a separate pipeline.
+Run the same command with the **same suite FQN**, changing `--schedule`.
+To update a pipeline created outside this example, pass its actual `name` from the API, which can
+differ from the UI display name:
+
+```bash
+python test-suite-automation/test_suite_pipeline.py \
+  --test-suite-fqn 'warehouse.analytics.public.orders.testSuite' \
+  --pipeline-name '<existing-pipeline-name>' \
+  --schedule '0 7 * * *'
+```
+
+`--pipeline-name` selects an existing pipeline only; an unknown name is rejected. Existing names
+must be unique across suites after orchestrator normalization (punctuation replacement, lowercasing,
+and truncation). If legacy pipelines share a workflow name, resolve that collision before redeploying.
 
 Only `airflowConfig.scheduleInterval` is patched. Existing timezone, test filters, sampling, retries,
 owners, processing engine, and pause/enabled settings are preserved.

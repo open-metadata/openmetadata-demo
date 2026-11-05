@@ -34,7 +34,7 @@ from metadata.utils.fqn import quote_name
 
 
 def build_pipeline_request(
-    suite: TestSuite, pipeline_name: str, airflow_config: AirflowConfig
+    suite: TestSuite, pipeline_name: str | None, airflow_config: AirflowConfig
 ) -> CreateIngestionPipelineRequest:
     """Associate the pipeline with the suite and execute against its table FQN."""
     table = suite.basicEntityReference
@@ -44,8 +44,9 @@ def build_pipeline_request(
         )
     if table is None or table.type != "table" or not table.fullyQualifiedName:
         raise ValueError("The Test Suite must have a basicEntityReference with a table FQN.")
+    # Orchestrators key by bare name; keep the full suite UUID within Argo's 52-character limit.
     return CreateIngestionPipelineRequest(
-        name=pipeline_name,
+        name=pipeline_name or f"dq_{model_str(suite.id)}",
         pipelineType=PipelineType.TestSuite,
         service=EntityReference(id=suite.id, type="testSuite"),
         sourceConfig=SourceConfig(
@@ -61,7 +62,7 @@ def build_pipeline_request(
 def configure_pipeline(
     metadata: OpenMetadata,
     suite_fqn: str,
-    pipeline_name: str,
+    pipeline_name: str | None,
     airflow_config: AirflowConfig,
 ) -> IngestionPipeline:
     """Create a pipeline or change only the cron schedule of an existing one."""
@@ -69,11 +70,13 @@ def configure_pipeline(
     if suite is None:
         raise ValueError(f"Test Suite not found: {suite_fqn}")
     request = build_pipeline_request(suite, pipeline_name, airflow_config)
-    pipeline_fqn = f"{model_str(suite.fullyQualifiedName)}.{quote_name(pipeline_name)}"
+    pipeline_fqn = f"{model_str(suite.fullyQualifiedName)}.{quote_name(model_str(request.name))}"
     pipeline = metadata.get_by_name(
         entity=IngestionPipeline, fqn=pipeline_fqn, fields=["airflowConfig"]
     )
     if pipeline is None:
+        if pipeline_name is not None:
+            raise ValueError("Named pipeline not found; omit --pipeline-name to create a new one.")
         return metadata.create_or_update(data=request)
     if (
         pipeline.pipelineType != PipelineType.TestSuite
@@ -112,7 +115,7 @@ def main() -> int:
     """Load credentials at execution time; deploy and optionally trigger the pipeline."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test-suite-fqn", required=True)
-    parser.add_argument("--pipeline-name", default="daily_data_quality")
+    parser.add_argument("--pipeline-name", help="Actual name of an existing pipeline to update")
     parser.add_argument("--schedule", default="0 6 * * *", help="Five-field cron expression")
     parser.add_argument("--trigger", action="store_true", help="Also request an immediate run")
     args = parser.parse_args()
