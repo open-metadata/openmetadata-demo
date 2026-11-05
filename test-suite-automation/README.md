@@ -27,7 +27,7 @@ python3.11 -m venv test-suite-automation/.venv
 source test-suite-automation/.venv/bin/activate
 python -m pip install -r test-suite-automation/requirements.txt
 
-export OPENMETADATA_HOST='https://your-tenant.getcollate.io/api'
+export OPENMETADATA_HOST='https://metadata.example.com/api'
 export OPENMETADATA_JWT_TOKEN='<your-api-token>'
 ```
 
