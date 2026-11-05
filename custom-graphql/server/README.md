@@ -5,6 +5,8 @@ example. It serves three static user records and does not connect to OpenMetadat
 
 ## Run the Server
 
+Use Node.js 24, matching the fixture's CI job.
+
 From the repository root, run:
 
 ```bash
