@@ -11,7 +11,7 @@ replacing unrelated user fields.
 
 ## Run the Example
 
-Start the included GraphQL fixture server:
+Use Node.js 24 to [run the included GraphQL fixture server](server/README.md#run-the-server):
 
 ```bash
 cd custom-graphql/server
